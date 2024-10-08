@@ -15,7 +15,7 @@ import pisi.context as ctx
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te `ugettext` yerine `gettext` kullanılıyor
 
 def file_corrupted(pfile):
     path = os.path.join(ctx.config.dest_dir(), pfile.path)
@@ -26,17 +26,17 @@ def file_corrupted(pfile):
         try:
             if pisi.util.sha1_file(path) != pfile.hash:
                 return True
-        except pisi.util.FilePermissionDeniedError, e:
+        except pisi.util.FilePermissionDeniedError as e:  # `except` kullanımı güncellendi
             raise e
     return False
 
 def check_files(files, check_config=False):
     results = {
-                'missing'   :   [],
-                'corrupted' :   [],
-                'denied'    :   [],
-                'config'    :   [],
-              }
+        'missing': [],
+        'corrupted': [],
+        'denied': [],
+        'config': [],
+    }
 
     for f in files:
         if not check_config and f.type == "config":
@@ -51,7 +51,7 @@ def check_files(files, check_config=False):
             try:
                 is_file_corrupted = file_corrupted(f)
 
-            except pisi.util.FilePermissionDeniedError, e:
+            except pisi.util.FilePermissionDeniedError as e:  # `except` kullanımı güncellendi
                 # Can't read file, probably because of permissions, skip
                 results['denied'].append(f.path)
 

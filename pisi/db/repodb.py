@@ -15,9 +15,7 @@ __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
 import os
-
 import piksemel
-
 import pisi
 import pisi.uri
 import pisi.util
@@ -58,8 +56,8 @@ class RepoOrder:
         url_node = repo_node.insertTag("Url")
         url_node.insertData(repo_url)
 
-        name_node = repo_node.insertTag("Status")
-        name_node.insertData("active")
+        status_node = repo_node.insertTag("Status")
+        status_node.insertData("active")
 
         media_node = repo_node.insertTag("Media")
         media_node.insertData(repo_type)
@@ -104,16 +102,17 @@ class RepoOrder:
     def get_order(self):
         order = []
 
-        #FIXME: get media order from pisi.conf
+        # FIXME: get media order from pisi.conf
         for m in ["cd", "usb", "remote", "local"]:
-            if self.repos.has_key(m):
+            if m in self.repos:
                 order.extend(self.repos[m])
 
         return order
 
     def _update(self, doc):
         repos_file = os.path.join(ctx.config.info_dir(), ctx.const.repos)
-        open(repos_file, "w").write("%s\n" % doc.toPrettyString())
+        with open(repos_file, "w") as f:
+            f.write("%s\n" % doc.toPrettyString())
         self._doc = None
         self.repos = self._get_repos()
 
@@ -147,7 +146,7 @@ class RepoDB(lazydb.LazyDB):
     def has_repo(self, name):
         return name in self.list_repos(only_active=False)
 
-    def has_repo_url(self, url, only_active = True):
+    def has_repo_url(self, url, only_active=True):
         return url in self.list_repo_urls(only_active)
 
     def get_repo_doc(self, repo_name):
@@ -155,7 +154,7 @@ class RepoDB(lazydb.LazyDB):
 
         index_path = repo.indexuri.get_uri()
 
-        #FIXME Local index files should also be cached.
+        # FIXME Local index files should also be cached.
         if File.is_compressed(index_path) or repo.indexuri.is_remote_file():
             index = os.path.basename(index_path)
             index_path = pisi.util.join_path(ctx.config.index_dir(),
@@ -170,23 +169,25 @@ class RepoDB(lazydb.LazyDB):
 
         try:
             return piksemel.parse(index_path)
-        except Exception, e:
+        except Exception as e:
             raise RepoError(_("Error parsing repository index information. Index file does not exist or is malformed."))
 
     def get_repo(self, repo):
         return Repo(pisi.uri.URI(self.get_repo_url(repo)))
 
-    #FIXME: this method is a quick hack around repo_info.indexuri.get_uri()
+    # FIXME: this method is a quick hack around repo_info.indexuri.get_uri()
     def get_repo_url(self, repo):
         urifile_path = pisi.util.join_path(ctx.config.index_dir(), repo, "uri")
-        uri = open(urifile_path, "r").read()
+        with open(urifile_path, "r") as f:
+            uri = f.read()
         return uri.rstrip()
 
-    def add_repo(self, name, repo_info, at = None):
+    def add_repo(self, name, repo_info, at=None):
         repo_path = pisi.util.join_path(ctx.config.index_dir(), name)
         os.makedirs(repo_path)
         urifile_path = pisi.util.join_path(ctx.config.index_dir(), name, "uri")
-        open(urifile_path, "w").write(repo_info.indexuri.get_uri())
+        with open(urifile_path, "w") as f:
+            f.write(repo_info.indexuri.get_uri())
         self.repoorder.add(name, repo_info.indexuri.get_uri())
 
     def remove_repo(self, name):
@@ -208,7 +209,7 @@ class RepoDB(lazydb.LazyDB):
         return repos
 
     def list_repos(self, only_active=True):
-        return filter(lambda x:True if not only_active else self.repo_active(x), self.repoorder.get_order())
+        return [x for x in self.repoorder.get_order() if not only_active or self.repo_active(x)]
 
     def list_repo_urls(self, only_active=True):
         repos = []
@@ -255,11 +256,10 @@ class RepoDB(lazydb.LazyDB):
 
         dist_release = self.get_distribution_release(name)
         if dist_release is not None:
-            compatible &= \
-                dist_release == ctx.config.values.general.distribution_release
+            compatible &= dist_release == ctx.config.values.general.distribution_release
 
         if not compatible:
             self.deactivate_repo(name)
             raise IncompatibleRepoError(
-                    _("Repository '%s' is not compatible with your "
-                      "distribution. Repository is disabled.") % name)
+                _("Repository '%s' is not compatible with your "
+                  "distribution. Repository is disabled.") % name)

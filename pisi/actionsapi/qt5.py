@@ -30,12 +30,11 @@ basename = "qt5"
 prefix = "/%s" % get.defaultprefixDIR()
 libdir = "%s/lib" % prefix
 libexecdir = "%s/libexec" % prefix
-sysconfdir= "/etc"
+sysconfdir = "/etc"
 bindir = "%s/bin" % prefix
 includedir = "%s/include" % prefix
 
-# qt5 spesific variables
-
+# qt5 specific variables
 headerdir = "%s/include/%s" % (prefix, basename)
 datadir = "%s/share/%s" % (prefix, basename)
 docdir = "/%s/%s" % (get.docDIR(), basename)
@@ -47,13 +46,12 @@ qmldir = "%s/%s/qml" % (libdir, basename)
 testdir = "%s/share/%s" % (prefix, basename)
 translationdir = "%s/translations" % datadir
 
-#Temporary bindir to avoid qt4 conflicts
-#qmake = "%s/qmake-qt5" % bindir
+# Temporary bindir to avoid qt4 conflicts
 qmake = "%s/qmake" % bindir
 
 class ConfigureError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
@@ -72,4 +70,3 @@ def make(parameters=''):
 
 def install(parameters='', argument='install'):
     cmaketools.install('INSTALL_ROOT="%s" %s' % (get.installDIR(), parameters), argument)
-

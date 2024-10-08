@@ -36,12 +36,12 @@ from pisi.actionsapi.shelltools import *
 
 from pisi.actionsapi import error
 
-def dobin(sourceFile, destinationDirectory = '/usr/bin'):
-    '''insert a executable file into /bin or /usr/bin'''
+def dobin(sourceFile, destinationDirectory='/usr/bin'):
+    '''insert an executable file into /bin or /usr/bin'''
     ''' example call: pisitools.dobin("bin/xloadimage", "/bin", "xload") '''
     executable_insinto(join_path(get.installDIR(), destinationDirectory), sourceFile)
 
-def dopixmaps(sourceFile, destinationDirectory = '/usr/share/pixmaps'):
+def dopixmaps(sourceFile, destinationDirectory='/usr/share/pixmaps'):
     '''insert a data file into /usr/share/pixmaps'''
     ''' example call: pisitools.dopixmaps("/usr/share/pixmaps/firefox", "firefox") '''
     readable_insinto(join_path(get.installDIR(), destinationDirectory), sourceFile)
@@ -56,7 +56,7 @@ def dodoc(*sourceFiles, **kw):
     readable_insinto(join_path(get.installDIR(), get.docDIR(), destDir), *sourceFiles)
 
 def doexe(sourceFile, destinationDirectory):
-    '''insert a executable file into destination directory'''
+    '''insert an executable file into destination directory'''
 
     ''' example call: pisitools.doexe("kde-3.4.sh", "/etc/X11/Sessions")'''
     executable_insinto(join_path(get.installDIR(), destinationDirectory), sourceFile)
@@ -66,10 +66,10 @@ def dohtml(*sourceFiles, **kw):
 
     ''' example call: pisitools.dohtml("doc/doxygen/html/*")'''
     destDir = kw.get("destDir", get.srcNAME())
-    destionationDirectory = join_path(get.installDIR(), get.docDIR(), destDir, 'html')
+    destinationDirectory = join_path(get.installDIR(), get.docDIR(), destDir, 'html')
 
-    if not can_access_directory(destionationDirectory):
-        makedirs(destionationDirectory)
+    if not can_access_directory(destinationDirectory):
+        makedirs(destinationDirectory)
 
     allowed_extensions = ['.png', '.gif', '.html', '.htm', '.jpg', '.css', '.js']
     disallowed_directories = ['CVS', '.git', '.svn', '.hg']
@@ -81,21 +81,21 @@ def dohtml(*sourceFiles, **kw):
 
         for source in sourceFileGlob:
             if os.path.isfile(source) and os.path.splitext(source)[1] in allowed_extensions:
-                system('install -m0644 "%s" %s' % (source, destionationDirectory))
+                os.system('install -m0644 "%s" %s' % (source, destinationDirectory))
             if os.path.isdir(source) and os.path.basename(source) not in disallowed_directories:
                 eraser = os.path.split(source)[0]
                 for root, dirs, files in os.walk(source):
                     newRoot = remove_prefix(eraser, root)
                     for sourcename in files:
                         if os.path.splitext(sourcename)[1] in allowed_extensions:
-                            makedirs(join_path(destionationDirectory, newRoot))
-                            system('install -m0644 %s %s' % (join_path(root, sourcename), join_path(destionationDirectory, newRoot, sourcename)))
+                            makedirs(join_path(destinationDirectory, newRoot))
+                            os.system('install -m0644 %s %s' % (join_path(root, sourcename), join_path(destinationDirectory, newRoot, sourcename)))
 
 def doinfo(*sourceFiles):
     '''inserts the into files in the list of files into /usr/share/info'''
     readable_insinto(join_path(get.installDIR(), get.infoDIR()), *sourceFiles)
 
-def dolib(sourceFile, destinationDirectory = '/usr/lib'):
+def dolib(sourceFile, destinationDirectory='/usr/lib'):
     '''insert the library into /usr/lib'''
 
     '''example call: pisitools.dolib("libz.a")'''
@@ -103,25 +103,25 @@ def dolib(sourceFile, destinationDirectory = '/usr/lib'):
     sourceFile = join_path(os.getcwd(), sourceFile)
     destinationDirectory = join_path(get.installDIR(), destinationDirectory)
 
-    lib_insinto(sourceFile, destinationDirectory, 0755)
+    lib_insinto(sourceFile, destinationDirectory, 0o755)
 
-def dolib_a(sourceFile, destinationDirectory = '/usr/lib'):
+def dolib_a(sourceFile, destinationDirectory='/usr/lib'):
     '''insert the static library into /usr/lib with permission 0644'''
 
     '''example call: pisitools.dolib_a("staticlib/libvga.a")'''
     sourceFile = join_path(os.getcwd(), sourceFile)
     destinationDirectory = join_path(get.installDIR(), destinationDirectory)
 
-    lib_insinto(sourceFile, destinationDirectory, 0644)
+    lib_insinto(sourceFile, destinationDirectory, 0o644)
 
-def dolib_so(sourceFile, destinationDirectory = '/usr/lib'):
+def dolib_so(sourceFile, destinationDirectory='/usr/lib'):
     '''insert the dynamic library into /usr/lib with permission 0755'''
 
     '''example call: pisitools.dolib_so("pppd/plugins/minconn.so")'''
     sourceFile = join_path(os.getcwd(), sourceFile)
     destinationDirectory = join_path(get.installDIR(), destinationDirectory)
 
-    lib_insinto(sourceFile, destinationDirectory, 0755)
+    lib_insinto(sourceFile, destinationDirectory, 0o755)
 
 def doman(*sourceFiles):
     '''inserts the man pages in the list of files into /usr/share/man/'''
@@ -149,20 +149,20 @@ def doman(*sourceFiles):
             manPDIR = join_path(manDIR, '/man%s' % pageDirectory)
             makedirs(manPDIR)
             if not compressed:
-                system('install -m0644 %s %s' % (source, manPDIR))
+                os.system('install -m0644 %s %s' % (source, manPDIR))
             else:
                 uncompress(compressed, targetDir=manPDIR)
 
-def domo(sourceFile, locale, destinationFile, localeDirPrefix = '/usr/share/locale'):
+def domo(sourceFile, locale, destinationFile, localeDirPrefix='/usr/share/locale'):
     '''inserts the mo files in the list of files into /usr/share/locale/LOCALE/LC_MESSAGES'''
 
     '''example call: pisitools.domo("po/tr.po", "tr", "pam_login.mo")'''
 
-    system('msgfmt %s' % sourceFile)
+    os.system('msgfmt %s' % sourceFile)
     makedirs('%s%s/%s/LC_MESSAGES/' % (get.installDIR(), localeDirPrefix, locale))
     move('messages.mo', '%s%s/%s/LC_MESSAGES/%s' % (get.installDIR(), localeDirPrefix, locale, destinationFile))
 
-def domove(sourceFile, destination, destinationFile = ''):
+def domove(sourceFile, destination, destinationFile=''):
     '''moves sourceFile/Directory into destinationFile/Directory'''
 
     ''' example call: pisitools.domove("/usr/bin/bash", "/bin/bash")'''
@@ -189,30 +189,23 @@ def rename(sourceFile, destinationFile):
 
     try:
         os.rename(join_path(get.installDIR(), sourceFile), join_path(get.installDIR(), baseDir, destinationFile))
-    except OSError, e:
+    except OSError as e:
         error(_('ActionsAPI [rename]: %s: %s') % (e, sourceFile))
 
-def dosed(sources, findPattern, replacePattern = '', filePattern = '', deleteLine = False, level = -1):
+def dosed(sources, findPattern, replacePattern='', filePattern='', deleteLine=False, level=-1):
     '''replaces patterns in sources'''
-
-    ''' example call: pisitools.dosed("/etc/passwd", "caglar", "cem")'''
-    ''' example call: pisitools.dosed("/etc/passwd", "caglar")'''
-    ''' example call: pisitools.dosed("/etc/pass*", "caglar")'''
-    ''' example call: pisitools.dosed("Makefile", "(?m)^(HAVE_PAM=.*)no", r"\1yes")'''
-    ''' example call: pisitools.dosed("./", "^(CFLAGS) =", r"\1 +=", "Makefile", level = 1)
-        will change: ./Makefile and ./*/Makefile'''
-    ''' example call: pisitools.dosed("./", "^\s*g_type_init\(\)", filePattern = ".*.c", deleteLine = True)
-        will change: delete lines which contains "g_type_init()" for all *.c files in ./ directory tree'''
 
     def get_files(path, pattern, level):
         res = []
-        if path.endswith("/"): path = path[:-1]
+        if path.endswith("/"): 
+            path = path[:-1]
         for root, dirs, files in os.walk(path):
             currentLevel = len(root.split("/")) - len(path.split("/"))
-            if not level == -1 and currentLevel > level: continue
+            if level != -1 and currentLevel > level: 
+                continue
             for f in files:
                 if re.search(pattern, f):
-                    res.append("%s/%s" % (root, f))
+                    res.append(f"{root}/{f}")
         return res
 
     backupExtension = ".pisi-backup"
@@ -225,46 +218,39 @@ def dosed(sources, findPattern, replacePattern = '', filePattern = '', deleteLin
         else:
             sourceFiles.append(source)
 
-    #if there is no match, raise exception
     if len(sourceFiles) == 0:
-        raise FileError(_('No such file matching pattern: "%s". \'dosed\' operation failed.') % filePattern if filePattern else sources)
+        raise FileError(_('No such file matching pattern: "%s". \'dosed\' operation failed.') % (filePattern if filePattern else sources))
 
     for sourceFile in sourceFiles:
         if can_access_file(sourceFile):
-            backupFile = "%s%s" % (sourceFile, backupExtension)
-            for line in fileinput.input(sourceFile, inplace = 1, backup = backupExtension):
-                #FIXME: In-place filtering is disabled when standard input is read
+            backupFile = f"{sourceFile}{backupExtension}"
+            for line in fileinput.input(sourceFile, inplace=True, backup=backupExtension):
                 if re.search(findPattern, line):
                     line = "" if deleteLine else re.sub(findPattern, replacePattern, line)  
                 sys.stdout.write(line)
             if can_access_file(backupFile):
-                # By default, filecmp.cmp() compares two files by looking file sizes.
-                # shallow=False tells cmp() to look file content.
                 if filecmp.cmp(sourceFile, backupFile, shallow=False):
                     ctx.ui.warning(_('dosed method has not changed file \'%s\'.') % sourceFile)
-                else: ctx.ui.info("%s has been changed by dosed method." % sourceFile, verbose=True)
+                else: 
+                    ctx.ui.info(f"{sourceFile} has been changed by dosed method.", verbose=True)
                 os.unlink(backupFile)
         else:
             raise FileError(_('File does not exist or permission denied: %s') % sourceFile)
 
-def dosbin(sourceFile, destinationDirectory = '/usr/sbin'):
-    '''insert a executable file into /sbin or /usr/sbin'''
-
-    ''' example call: pisitools.dobin("bin/xloadimage", "/sbin") '''
+def dosbin(sourceFile, destinationDirectory='/usr/sbin'):
+    '''insert an executable file into /sbin or /usr/sbin'''
     executable_insinto(join_path(get.installDIR(), destinationDirectory), sourceFile)
 
 def dosym(sourceFile, destinationFile):
     '''creates soft link between sourceFile and destinationFile'''
-
-    ''' example call: pisitools.dosym("/usr/bin/bash", "/bin/bash")'''
     makedirs(join_path(get.installDIR(), os.path.dirname(destinationFile)))
 
     try:
-        os.symlink(sourceFile, join_path(get.installDIR() ,destinationFile))
+        os.symlink(sourceFile, join_path(get.installDIR(), destinationFile))
     except OSError:
         error(_('ActionsAPI [dosym]: File already exists: %s') % (destinationFile))
 
-def insinto(destinationDirectory, sourceFile,  destinationFile = '', sym = True):
+def insinto(destinationDirectory, sourceFile, destinationFile='', sym=True):
     '''insert a sourceFile into destinationDirectory as a destinationFile with same uid/guid/permissions'''
     makedirs(join_path(get.installDIR(), destinationDirectory))
 
@@ -281,16 +267,13 @@ def insinto(destinationDirectory, sourceFile,  destinationFile = '', sym = True)
 
 def newdoc(sourceFile, destinationFile):
     '''inserts a sourceFile into /usr/share/doc/PACKAGE/ directory as a destinationFile'''
-    destinationDirectory = '' #490
     destinationDirectory = os.path.dirname(destinationFile)
     destinationFile = os.path.basename(destinationFile)
-    # Use copy instead of move or let build-install scream like file not found!
     copy(sourceFile, destinationFile)
     readable_insinto(join_path(get.installDIR(), 'usr/share/doc', get.srcNAME(), destinationDirectory), destinationFile)
 
 def newman(sourceFile, destinationFile):
     '''inserts a sourceFile into /usr/share/man/manPREFIX/ directory as a destinationFile'''
-    # Use copy instead of move or let build-install scream like file not found!
     copy(sourceFile, destinationFile)
     doman(destinationFile)
 
@@ -340,3 +323,4 @@ cflags = Flags("CFLAGS")
 ldflags = Flags("LDFLAGS")
 cxxflags = Flags("CXXFLAGS")
 flags = Flags("CFLAGS", "CXXFLAGS")
+

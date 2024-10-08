@@ -14,13 +14,14 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
 import pisi.util as util
 import pisi.api
 import pisi.db
+
 
 class Info(command.Command):
     __doc__ = _("""Display package information
@@ -41,28 +42,26 @@ Usage: info <package1> <package2> ... <packagen>
     name = ("info", None)
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("info options"))
         self.add_options(group)
         self.parser.add_option_group(group)
 
     def add_options(self, group):
         group.add_option("-f", "--files", action="store_true",
-                               default=False,
-                               help=_("Show a list of package files."))
+                         default=False,
+                         help=_("Show a list of package files."))
         group.add_option("-c", "--component", action="append",
-                               default=None, help=_("Info about the given component"))
+                         default=None, help=_("Info about the given component"))
         group.add_option("-F", "--files-path", action="store_true",
-                               default=False,
-                               help=_("Show only paths."))
+                         default=False,
+                         help=_("Show only paths."))
         group.add_option("-s", "--short", action="store_true",
-                               default=False, help=_("Do not show details"))
+                         default=False, help=_("Do not show details"))
         group.add_option("--xml", action="store_true",
-                               default=False, help=_("Output in xml format"))
+                         default=False, help=_("Output in xml format"))
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         components = ctx.get_option('component')
         if not components and not self.args:
@@ -72,7 +71,7 @@ Usage: info <package1> <package2> ... <packagen>
         index = pisi.index.Index()
         index.distribution = None
 
-        # info of components
+        # Info of components
         if components:
             for name in components:
                 if self.componentdb.has_component(name):
@@ -81,11 +80,11 @@ Usage: info <package1> <package2> ... <packagen>
                         index.add_component(component)
                     else:
                         if not self.options.short:
-                            ctx.ui.info(unicode(component))
+                            ctx.ui.info(str(component))  # Python 3 uyumlu
                         else:
                             ctx.ui.info("%s - %s" % (component.name, component.summary))
 
-        # info of packages
+        # Info of packages
         for arg in self.args:
             if self.options.xml:
                 index.packages.append(pisi.api.info(arg)[0].package)
@@ -101,7 +100,6 @@ Usage: info <package1> <package2> ... <packagen>
             sys.stdout.write('\n')
 
     def info_package(self, arg):
-
         if arg.endswith(ctx.const.package_suffix):
             self.pisifile_info(arg)
             return
@@ -111,34 +109,34 @@ Usage: info <package1> <package2> ... <packagen>
         self.sourcedb_info(arg)
 
     def print_files(self, files):
-        files.list.sort(key = lambda x:x.path)
+        files.list.sort(key=lambda x: x.path)
         for fileinfo in files.list:
             if self.options.files:
-                print fileinfo
+                print(fileinfo)  # Python 3 uyumlu
             else:
-                print "/" + fileinfo.path
+                print("/" + fileinfo.path)  # Python 3 uyumlu
 
     def print_metadata(self, metadata, packagedb=None):
         if ctx.get_option('short'):
             pkg = metadata.package
-            ctx.ui.formatted_output(" - ".join((pkg.name, unicode(pkg.summary))))
+            ctx.ui.formatted_output(" - ".join((pkg.name, str(pkg.summary))))  # Python 3 uyumlu
         else:
-            ctx.ui.formatted_output(unicode(metadata.package))
+            ctx.ui.formatted_output(str(metadata.package))  # Python 3 uyumlu
             if packagedb:
-                revdeps =  [name for name, dep in packagedb.get_rev_deps(metadata.package.name)]
+                revdeps = [name for name, dep in packagedb.get_rev_deps(metadata.package.name)]
                 ctx.ui.formatted_output(" ".join((_("Reverse Dependencies:"), util.strlist(revdeps))))
-                print
+                print()
 
     def print_specdata(self, spec, sourcedb=None):
         src = spec.source
         if ctx.get_option('short'):
-            ctx.ui.formatted_output(" - ".join((src.name, unicode(src.summary))))
+            ctx.ui.formatted_output(" - ".join((src.name, str(src.summary))))  # Python 3 uyumlu
         else:
-            ctx.ui.formatted_output(unicode(spec))
+            ctx.ui.formatted_output(str(spec))  # Python 3 uyumlu
             if sourcedb:
-                revdeps =  [name for name, dep in sourcedb.get_rev_deps(spec.source.name)]
-                print _('Reverse Build Dependencies:'), util.strlist(revdeps)
-                print
+                revdeps = [name for name, dep in sourcedb.get_rev_deps(spec.source.name)]
+                print(_('Reverse Build Dependencies:'), util.strlist(revdeps))
+                print()
 
     def pisifile_info(self, package):
         metadata, files = pisi.api.info_file(package)

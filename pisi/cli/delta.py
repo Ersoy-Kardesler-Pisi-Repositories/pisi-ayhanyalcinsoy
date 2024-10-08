@@ -11,10 +11,10 @@
 #
 
 import optparse
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.cli.command as command
@@ -23,8 +23,8 @@ import pisi.context as ctx
 
 usage = _("""Creates delta packages
 
-Usages: delta oldpackage1 oldpackage2 ...  newpackage
-        delta -t newpackage oldpackage1 oldpackage2 ...
+Usage: delta oldpackage1 oldpackage2 ... newpackage
+       delta -t newpackage oldpackage1 oldpackage2 ...
 
 Delta command finds the changed files between the given
 packages by comparing the sha1sum of files and creates
@@ -77,7 +77,7 @@ class Delta(command.Command):
                     ctx.ui.info("  %s" % format)
             return
 
-        new_package = ctx.get_option("newest_package")
+        new_package = self.options.newest_package  # Değiştirildi
         if new_package:
             old_packages = self.args
         else:

@@ -10,11 +10,11 @@
 # Please read the COPYING file.
 
 # python standard library
-
 import os
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Updated from ugettext to gettext for Python 3 compatibility
 
 # pisi modules
 import pisi
@@ -25,8 +25,10 @@ import pisi.uri
 import pisi.fetcher
 import pisi.mirrors
 
+
 class Error(pisi.Error):
     pass
+
 
 class SourceArchives:
     """This is a wrapper for supporting multiple SourceArchive objects."""
@@ -44,8 +46,9 @@ class SourceArchives:
 
 
 class SourceArchive:
-    """source archive. this is a class responsible for fetching
-    and unpacking a source archive"""
+    """Source archive. This class is responsible for fetching
+    and unpacking a source archive."""
+    
     def __init__(self, archive):
         self.url = pisi.uri.URI(archive.uri)
         self.archive = archive
@@ -97,7 +100,7 @@ class SourceArchive:
             except pisi.fetcher.FetchError:
                 pass
 
-        raise pisi.fetcher.FetchError(_('Could not fetch source from %s mirrors.') % name);
+        raise pisi.fetcher.FetchError(_('Could not fetch source from %s mirrors.') % name)
 
     def is_cached(self, interactive=True):
         if not os.access(self.archiveFile, os.R_OK):
@@ -112,10 +115,9 @@ class SourceArchive:
         return False
 
     def unpack(self, target_dir, clean_dir=True):
-
         # check archive file's integrity
         if not util.check_file_hash(self.archiveFile, self.archive.sha1sum):
-            raise Error, _("unpack: check_file_hash failed")
+            raise Error(_("unpack: check_file_hash failed"))
 
         try:
             archive = pisi.archive.Archive(self.archiveFile, self.archive.type)

@@ -11,7 +11,6 @@
 #
 
 import os
-
 import pisi.context as ctx
 import pisi.db.lazydb as lazydb
 import pisi.history
@@ -23,9 +22,9 @@ class HistoryDB(lazydb.LazyDB):
         self.history = pisi.history.History()
 
     def __generate_history(self):
-        logs = filter(lambda x:x.endswith(".xml"), os.listdir(ctx.config.history_dir()))
-        logs.sort(lambda x,y:int(x.split("_")[0]) - int(y.split("_")[0]))
-        logs.reverse()
+        logs = [x for x in os.listdir(ctx.config.history_dir()) if x.endswith(".xml")]  # Liste oluşturma
+        logs.sort(key=lambda x: int(x.split("_")[0]))  # Sıralama
+        logs.reverse()  # Ters çevirme
         return logs
 
     def create_history(self, operation):
@@ -39,7 +38,7 @@ class HistoryDB(lazydb.LazyDB):
         self.history.add(pkgBefore, pkgAfter, operation, otype)
 
     def load_config(self, operation, package):
-        config_dir = os.path.join(ctx.config.history_dir(), "%03d" % operation, package)
+        config_dir = os.path.join(ctx.config.history_dir(), f"{operation:03d}", package)
         if os.path.exists(config_dir):
             import distutils.dir_util as dir_util
             dir_util.copy_tree(config_dir, "/")
@@ -47,13 +46,13 @@ class HistoryDB(lazydb.LazyDB):
     def save_config(self, package, config_file):
         hist_dir = os.path.join(ctx.config.history_dir(), self.history.operation.no, package)
         if os.path.isdir(config_file):
-            os.makedirs(os.path.join(hist_dir, config_file))
+            os.makedirs(os.path.join(hist_dir, config_file), exist_ok=True)  # exist_ok=True ile hata önleme
             return
 
         destdir = os.path.join(hist_dir, config_file[1:])
-        pisi.util.copy_file_stat(config_file, destdir);
+        pisi.util.copy_file_stat(config_file, destdir)
 
-    def update_repo(self, repo, uri, operation = None):
+    def update_repo(self, repo, uri, operation=None):
         self.history.update_repo(repo, uri, operation)
         self.update_history()
 
@@ -62,26 +61,26 @@ class HistoryDB(lazydb.LazyDB):
 
     def get_operation(self, operation):
         for log in self.__logs:
-            if log.startswith("%03d_" % operation):
+            if log.startswith(f"{operation:03d}_"):
                 hist = pisi.history.History(os.path.join(ctx.config.history_dir(), log))
                 hist.operation.no = int(log.split("_")[0])
                 return hist.operation
         return None
 
     def get_package_config_files(self, operation, package):
-        package_path = os.path.join(ctx.config.history_dir(), "%03d/%s" % (operation, package))
+        package_path = os.path.join(ctx.config.history_dir(), f"{operation:03d}", package)
         if not os.path.exists(package_path):
             return None
 
         configs = []
-        for root, dirs, files in os.walk(package_path):
+        for root, _, files in os.walk(package_path):
             for f in files:
-                configs.append(("%s/%s" % (root, f)))
+                configs.append(os.path.join(root, f))
 
         return configs
 
     def get_config_files(self, operation):
-        config_path = os.path.join(ctx.config.history_dir(), "%03d" % operation)
+        config_path = os.path.join(ctx.config.history_dir(), f"{operation:03d}")
         if not os.path.exists(config_path):
             return None
 
@@ -93,11 +92,11 @@ class HistoryDB(lazydb.LazyDB):
         return allconfigs
 
     def get_till_operation(self, operation):
-        if not filter(lambda x:x.startswith("%03d_" % operation), self.__logs):
+        if not any(log.startswith(f"{operation:03d}_") for log in self.__logs):
             return
 
         for log in self.__logs:
-            if log.startswith("%03d_" % operation):
+            if log.startswith(f"{operation:03d}_"):
                 return
 
             hist = pisi.history.History(os.path.join(ctx.config.history_dir(), log))
@@ -112,9 +111,9 @@ class HistoryDB(lazydb.LazyDB):
             yield hist.operation
 
     def get_last_repo_update(self, last=1):
-        repoupdates = filter(lambda l:l.endswith("repoupdate.xml"), self.__logs)
+        repoupdates = [l for l in self.__logs if l.endswith("repoupdate.xml")]
         repoupdates.reverse()
-        if not len(repoupdates) >= 2:
+        if len(repoupdates) < 2:
             return None
 
         if last != 1 and len(repoupdates) <= last:

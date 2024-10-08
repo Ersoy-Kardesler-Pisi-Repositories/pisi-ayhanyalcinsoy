@@ -16,15 +16,15 @@ import fnmatch
 import pisi.db
 
 def exclude_from(packages, exfrom):
-
     if not os.path.exists(exfrom):
         return packages
 
     patterns = []
     if os.path.exists(exfrom):
-        for line in open(exfrom, "r").readlines():
-            if not line.startswith('#') and not line == '\n':
-                patterns.append(line.strip())
+        with open(exfrom, "r") as file:  # Dosya açma işlemi için context manager kullanıldı
+            for line in file:
+                if not line.startswith('#') and line.strip():  # Boş satır kontrolü güncellendi
+                    patterns.append(line.strip())
         if patterns:
             return exclude(packages, patterns)
 
@@ -33,7 +33,7 @@ def exclude_from(packages, exfrom):
 def exclude(packages, patterns):
     packages = set(packages)
     componentdb = pisi.db.componentdb.ComponentDB()
-    
+
     for pattern in patterns:
         # match pattern in package names
         match = fnmatch.filter(packages, pattern)

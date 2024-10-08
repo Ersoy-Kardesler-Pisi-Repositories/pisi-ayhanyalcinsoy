@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.cli.build as build
@@ -40,21 +40,20 @@ You can also give the name of a component.
     name = ("emerge", "em")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("emerge options"))
-        super(Emerge, self).add_options(group)
+        super(Emerge, self).options()  # super ile add_options çağrısı düzeltildi
         group.add_option("-c", "--component", action="store",
-                               default=None, help=_("Emerge available packages under given component"))
+                         default=None, help=_("Emerge available packages under given component"))
         group.add_option("--ignore-file-conflicts", action="store_true",
-                     default=False, help=_("Ignore file conflicts"))
+                         default=False, help=_("Ignore file conflicts"))
         group.add_option("--ignore-package-conflicts", action="store_true",
-                     default=False, help=_("Ignore package conflicts"))
+                         default=False, help=_("Ignore package conflicts"))
         group.add_option("--ignore-comar", action="store_true",
-                               default=False, help=_("Bypass comar configuration agent"))
+                         default=False, help=_("Bypass comar configuration agent"))
         self.parser.add_option_group(group)
 
     def run(self):
-        self.init(database = True)
+        self.init(database=True)
 
         component = ctx.get_option('component')
         if not self.args and not component:
@@ -74,4 +73,3 @@ You can also give the name of a component.
             ctx.config.options.output_dir = ctx.config.cached_packages_dir()
 
         pisi.api.emerge(sources)
-

@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2005-2010 TUBITAK/UEKAE
 #
@@ -14,8 +14,8 @@
 # Standart Python Modules
 import os
 import glob
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
@@ -28,18 +28,18 @@ from pisi.actionsapi.shelltools import *
 
 class FileError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
 class ArgumentError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
 def executable_insinto(destinationDirectory, *sourceFiles):
-    '''insert a executable file into destinationDirectory'''
+    '''insert an executable file into destinationDirectory'''
 
     if not sourceFiles or not destinationDirectory:
         raise ArgumentError(_('Insufficient arguments.'))
@@ -73,8 +73,8 @@ def readable_insinto(destinationDirectory, *sourceFiles):
         for source in sourceFileGlob:
             system('install -m0644 "%s" %s' % (source, destinationDirectory))
 
-def lib_insinto(sourceFile, destinationDirectory, permission = 0644):
-    '''inserts a library fileinto destinationDirectory with given permission'''
+def lib_insinto(sourceFile, destinationDirectory, permission=0o644):
+    '''inserts a library file into destinationDirectory with given permission'''
 
     if not sourceFile or not destinationDirectory:
         raise ArgumentError(_('Insufficient arguments.'))
@@ -83,6 +83,6 @@ def lib_insinto(sourceFile, destinationDirectory, permission = 0644):
         makedirs(destinationDirectory)
 
     if os.path.islink(sourceFile):
-        os.symlink(os.path.realpath(sourceFile), os.path.join(destinationDirectory, sourceFile))
+        os.symlink(os.path.realpath(sourceFile), os.path.join(destinationDirectory, os.path.basename(sourceFile)))
     else:
-        system('install -m0%o %s %s' % (permission, sourceFile, destinationDirectory))
+        system('install -m%o %s %s' % (permission, sourceFile, destinationDirectory))

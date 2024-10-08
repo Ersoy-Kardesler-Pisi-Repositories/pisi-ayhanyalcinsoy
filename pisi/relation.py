@@ -8,16 +8,14 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import pisi
 import pisi.version
 import pisi.db
 import pisi.pxml.autoxml as autoxml
 
-class Relation:
-
-    __metaclass__ = autoxml.autoxml
+class Relation(metaclass=autoxml.autoxml):
+    """Class representing a package relation."""
 
     s_Package = [autoxml.String, autoxml.mandatory]
     a_version = [autoxml.String, autoxml.optional]
@@ -28,6 +26,7 @@ class Relation:
     a_releaseTo = [autoxml.String, autoxml.optional]
 
     def satisfies_relation(self, version, release):
+        """Check if the given version and release satisfy the relation."""
         if self.version and version != self.version:
             return False
         else:
@@ -55,6 +54,7 @@ class Relation:
         return True
 
 def installed_package_satisfies(relation):
+    """Determine if an installed package satisfies the given relation."""
     installdb = pisi.db.installdb.InstallDB()
     pkg_name = relation.package
     if not installdb.has_package(pkg_name):

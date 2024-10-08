@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2005-2010 TUBITAK/UEKAE
 #
@@ -37,7 +37,7 @@ def can_access_file(filePath):
     return os.access(filePath, os.F_OK)
 
 def can_access_directory(destinationDirectory):
-    '''test readability, writability and executablility of directory'''
+    '''test readability, writability and executability of directory'''
     return os.access(destinationDirectory, os.R_OK | os.W_OK | os.X_OK)
 
 def makedirs(destinationDirectory):
@@ -48,15 +48,14 @@ def makedirs(destinationDirectory):
     except OSError:
         error(_('Cannot create directory %s') % destinationDirectory)
 
-def echo(destionationFile, content):
+def echo(destinationFile, content):
     try:
-        f = open(destionationFile, 'a')
-        f.write('%s\n' % content)
-        f.close()
+        with open(destinationFile, 'a') as f:
+            f.write('%s\n' % content)
     except IOError:
-        error(_('ActionsAPI [echo]: Can\'t append to file %s.') % (destionationFile))
+        error(_('ActionsAPI [echo]: Can\'t append to file %s.') % (destinationFile))
 
-def chmod(filePath, mode = 0755):
+def chmod(filePath, mode=0o755):
     '''change the mode of filePath to the mode'''
     filePathGlob = glob.glob(filePath)
     if len(filePathGlob) == 0:
@@ -67,19 +66,17 @@ def chmod(filePath, mode = 0755):
             try:
                 os.chmod(fileName, mode)
             except OSError:
-                ctx.ui.error(_('ActionsAPI [chmod]: Operation not permitted: %s (mode: 0%o)') \
-                                                                % (fileName, mode))
+                ctx.ui.error(_('ActionsAPI [chmod]: Operation not permitted: %s (mode: 0%o)') % (fileName, mode))
         else:
             ctx.ui.error(_('ActionsAPI [chmod]: File %s doesn\'t exists.') % (fileName))
 
-def chown(filePath, uid = 'root', gid = 'root'):
+def chown(filePath, uid='root', gid='root'):
     '''change the owner and group id of filePath to uid and gid'''
     if can_access_file(filePath):
         try:
             os.chown(filePath, pwd.getpwnam(uid)[2], grp.getgrnam(gid)[2])
         except OSError:
-            ctx.ui.error(_('ActionsAPI [chown]: Operation not permitted: %s (uid: %s, gid: %s)') \
-                                                 % (filePath, uid, gid))
+            ctx.ui.error(_('ActionsAPI [chown]: Operation not permitted: %s (uid: %s, gid: %s)') % (filePath, uid, gid))
     else:
         ctx.ui.error(_('ActionsAPI [chown]: File %s doesn\'t exists.') % filePath)
 
@@ -136,7 +133,7 @@ def move(source, destination):
             error(_('ActionsAPI [move]: File %s doesn\'t exists.') % (filePath))
 
 # FIXME: instead of passing a sym parameter, split copy and copytree into 4 different function
-def copy(source, destination, sym = True):
+def copy(source, destination, sym=True):
     '''recursively copy a "source" file or directory to "destination"'''
     sourceGlob = glob.glob(source)
     if len(sourceGlob) == 0:
@@ -165,7 +162,7 @@ def copy(source, destination, sym = True):
         else:
             error(_('ActionsAPI [copy]: File %s does not exist.') % filePath)
 
-def copytree(source, destination, sym = True):
+def copytree(source, destination, sym=True):
     '''recursively copy an entire directory tree rooted at source'''
     if isDirectory(source):
         if os.path.exists(destination):
@@ -176,8 +173,8 @@ def copytree(source, destination, sym = True):
                 copytree(source, join_path(destination, os.path.basename(source)))
                 return
         try:
-            shutil.copytree(source, destination, sym)
-        except OSError, e:
+            shutil.copytree(source, destination, symlinks=sym)
+        except OSError as e:
             error(_('ActionsAPI [copytree] %s to %s: %s') % (source, destination, e))
     else:
         error(_('ActionsAPI [copytree]: Directory %s doesn\'t exists.') % (source))
@@ -194,12 +191,12 @@ def touch(filePath):
             os.utime(f, None)
     else:
         try:
-            f = open(filePath, 'w')
-            f.close()
+            with open(filePath, 'w'):
+                pass
         except IOError:
             error(_('ActionsAPI [touch]: Permission denied: %s') % (filePath))
 
-def cd(directoryName = ''):
+def cd(directoryName=''):
     '''change directory'''
     current = os.getcwd()
     if directoryName:
@@ -247,10 +244,10 @@ def dirName(filePath):
     return os.path.dirname(filePath)
 
 def system(command):
-    command = string.join(string.split(command))
+    command = ' '.join(command.split())
     retValue = run_logged(command)
 
-    #if return value is different than 0, it means error, raise exception
+    # if return value is different than 0, it means error, raise exception
     if retValue != 0:
         error(_("Command \"%s\" failed, return value was %d.") % (command, retValue))
 

@@ -11,10 +11,10 @@
 #
 
 import optparse
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -37,17 +37,15 @@ Lists packages installed as dependency, but no longer needed by any other instal
     name = ("list-orphaned", "lo")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("list-orphaned options"))
         group.add_option("-a", "--all", action="store_true",
-                               default=False, help=_("Show all packages without reverse dependencies"))
+                         default=False, help=_("Show all packages without reverse dependencies"))
         group.add_option("-x", "--exclude", action="append",
-                     default=None, help=_("Ignore packages and components whose basenames match pattern."))
+                         default=None, help=_("Ignore packages and components whose basenames match pattern."))
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
         orphaned = self.installdb.get_no_rev_deps() if self.options.all else self.installdb.get_orphaned()
 
         if self.options.exclude:
@@ -56,4 +54,5 @@ Lists packages installed as dependency, but no longer needed by any other instal
         if orphaned:
             ctx.ui.info(_("Orphaned packages:"))
             ctx.ui.info(util.format_by_columns(sorted(orphaned)))
-        else: ctx.ui.info(_("No orphaned packages"))
+        else:
+            ctx.ui.info(_("No orphaned packages"))

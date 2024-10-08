@@ -16,7 +16,7 @@ defined."""
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılıyor.
 
 from pisi.util import Singleton
 
@@ -26,21 +26,19 @@ class _constant:
         pass
 
     def __setattr__(self, name, value):
-        if self.__dict__.has_key(name):
-            raise self.ConstError, _("Can't rebind constant: %s") % name
+        if name in self.__dict__:  # has_key() yerine in kullanıldı
+            raise self.ConstError(_("Can't rebind constant: %s") % name)
         # Binding an attribute once to a const is available
         self.__dict__[name] = value
 
     def __delattr__(self, name):
-        if self.__dict__.has_key(name):
-            raise self.ConstError, _("Can't unbind constant: %s") % name
+        if name in self.__dict__:  # has_key() yerine in kullanıldı
+            raise self.ConstError(_("Can't unbind constant: %s") % name)
         # we don't have an attribute by this name
-        raise NameError, name
+        raise NameError(name)
 
-class Constants:
+class Constants(metaclass=Singleton):  # __metaclass__ kullanımı yerine metaclass argümanı eklendi
     "Pisi Constants Singleton"
-
-    __metaclass__ = Singleton
 
     __c = _constant()
 
@@ -69,17 +67,12 @@ class Constants:
 
         # directory suffixes for build
         self.__c.work_dir_suffix = "/work"       # these, too, because we might wanna change 'em
-        self.__c.install_dir_suffix  = "/install"
-        self.__c.debug_dir_suffix  = "/debug"
-        self.__c.debug_files_suffix  = "/usr/lib/debug"
-        self.__c.quilt_dir_suffix  = "/patches"
+        self.__c.install_dir_suffix = "/install"
+        self.__c.debug_dir_suffix = "/debug"
+        self.__c.debug_files_suffix = "/usr/lib/debug"
+        self.__c.quilt_dir_suffix = "/patches"
 
         # file/directory names
-        #note: these don't seem very well, constants are used
-        #when it is easier/more meaningful to write the constant name, or
-        #when the constant is bound to change later on.
-        #in some places literals are just as good, for instance
-        #when constant is the same as string. readability is important...
         self.__c.actions_file = "actions.py"
         self.__c.pspec_file = "pspec.xml"
         self.__c.files_dir = "files"
@@ -106,8 +99,8 @@ class Constants:
         self.__c.docs_component = "programming.docs"
         self.__c.installed_extra = "installedextra"
 
-        #file/directory permissions
-        self.__c.umask = 0022
+        # file/directory permissions
+        self.__c.umask = 0o022  # 0o ile oktal gösterim
 
         # functions in actions_file
         self.__c.setup_func = "setup"
@@ -116,7 +109,6 @@ class Constants:
         self.__c.install_func = "install"
 
         # file types
-        # FIXME: these seem redundant
         self.__c.doc = "doc"
         self.__c.man = "man"
         self.__c.info = "info"
@@ -126,47 +118,49 @@ class Constants:
         self.__c.executable = "executable"
         self.__c.data = "data"
         self.__c.localedata = "localedata"
-        self.__c.colors = {'black'              : "\033[30m",
-                           'red'                : "\033[31m",
-                           'green'              : "\033[32m",
-                           'yellow'             : "\033[33m",
-                           'blue'               : "\033[34m",
-                           'purple'             : "\033[35m",
-                           'cyan'               : "\033[36m",
-                           'white'              : "\033[37m",
-                           'brightblack'        : "\033[01;30m",
-                           'brightred'          : "\033[01;31m",
-                           'brightgreen'        : "\033[01;32m",
-                           'brightyellow'       : "\033[01;33m",
-                           'brightblue'         : "\033[01;34m",
-                           'brightmagenta'      : "\033[01;35m",
-                           'brightcyan'         : "\033[01;36m",
-                           'brightwhite'        : "\033[01;37m",
-                           'underlineblack'     : "\033[04;30m",
-                           'underlinered'       : "\033[04;31m",
-                           'underlinegreen'     : "\033[04;32m",
-                           'underlineyellow'    : "\033[04;33m",
-                           'underlineblue'      : "\033[04;34m",
-                           'underlinemagenta'   : "\033[04;35m",
-                           'underlinecyan'      : "\033[04;36m",
-                           'underlinewhite'     : "\033[04;37m",
-                           'blinkingblack'      : "\033[05;30m",
-                           'blinkingred'        : "\033[05;31m",
-                           'blinkinggreen'      : "\033[05;32m",
-                           'blinkingyellow'     : "\033[05;33m",
-                           'blinkingblue'       : "\033[05;34m",
-                           'blinkingmagenta'    : "\033[05;35m",
-                           'blinkingcyan'       : "\033[05;36m",
-                           'blinkingwhite'      : "\033[05;37m",
-                           'backgroundblack'    : "\033[07;30m",
-                           'backgroundred'      : "\033[07;31m",
-                           'backgroundgreen'    : "\033[07;32m",
-                           'backgroundyellow'   : "\033[07;33m",
-                           'backgroundblue'     : "\033[07;34m",
-                           'backgroundmagenta'  : "\033[07;35m",
-                           'backgroundcyan'     : "\033[07;36m",
-                           'backgroundwhite'    : "\033[07;37m",
-                           'default'            : "\033[0m"  }
+        self.__c.colors = {
+            'black': "\033[30m",
+            'red': "\033[31m",
+            'green': "\033[32m",
+            'yellow': "\033[33m",
+            'blue': "\033[34m",
+            'purple': "\033[35m",
+            'cyan': "\033[36m",
+            'white': "\033[37m",
+            'brightblack': "\033[01;30m",
+            'brightred': "\033[01;31m",
+            'brightgreen': "\033[01;32m",
+            'brightyellow': "\033[01;33m",
+            'brightblue': "\033[01;34m",
+            'brightmagenta': "\033[01;35m",
+            'brightcyan': "\033[01;36m",
+            'brightwhite': "\033[01;37m",
+            'underlineblack': "\033[04;30m",
+            'underlinered': "\033[04;31m",
+            'underlinegreen': "\033[04;32m",
+            'underlineyellow': "\033[04;33m",
+            'underlineblue': "\033[04;34m",
+            'underlinemagenta': "\033[04;35m",
+            'underlinecyan': "\033[04;36m",
+            'underlinewhite': "\033[04;37m",
+            'blinkingblack': "\033[05;30m",
+            'blinkingred': "\033[05;31m",
+            'blinkinggreen': "\033[05;32m",
+            'blinkingyellow': "\033[05;33m",
+            'blinkingblue': "\033[05;34m",
+            'blinkingmagenta': "\033[05;35m",
+            'blinkingcyan': "\033[05;36m",
+            'blinkingwhite': "\033[05;37m",
+            'backgroundblack': "\033[07;30m",
+            'backgroundred': "\033[07;31m",
+            'backgroundgreen': "\033[07;32m",
+            'backgroundyellow': "\033[07;33m",
+            'backgroundblue': "\033[07;34m",
+            'backgroundmagenta': "\033[07;35m",
+            'backgroundcyan': "\033[07;36m",
+            'backgroundwhite': "\033[07;37m",
+            'default': "\033[0m"
+        }
 
     def __getattr__(self, attr):
         return getattr(self.__c, attr)

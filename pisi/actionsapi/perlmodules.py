@@ -9,13 +9,13 @@
 #
 # Please read the COPYING file.
 
-# standard python modules
+# Standard Python Modules
 import os
 import glob
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır.
 
 # Pisi Modules
 import pisi.context as ctx
@@ -29,57 +29,64 @@ from pisi.actionsapi.shelltools import export
 from pisi.actionsapi.shelltools import unlink
 from pisi.actionsapi.shelltools import unlinkDir
 
+
 class ConfigureError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
+
 
 class MakeError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
+
 
 class InstallError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
 
-def configure(parameters = ''):
-    '''configure source with given parameters.'''
+
+def configure(parameters=''):
+    '''Configure source with given parameters.'''
     export('PERL_MM_USE_DEFAULT', '1')
     if can_access_file('Build.PL'):
         if system('perl Build.PL installdirs=vendor destdir=%s' % get.installDIR()):
-            raise ConfigureError, _('Configure failed.')
+            raise ConfigureError(_('Configure failed.'))
     else:
         if system('perl Makefile.PL %s PREFIX=/usr INSTALLDIRS=vendor DESTDIR=%s' % (parameters, get.installDIR())):
-            raise ConfigureError, _('Configure failed.')
+            raise ConfigureError(_('Configure failed.'))
 
-def make(parameters = ''):
-    '''make source with given parameters.'''
+
+def make(parameters=''):
+    '''Make source with given parameters.'''
     if can_access_file('Makefile'):
         if system('make %s' % parameters):
-            raise MakeError, _('Make failed.')
+            raise MakeError(_('Make failed.'))
     else:
         if system('perl Build %s' % parameters):
-            raise MakeError, _('perl build failed.')
+            raise MakeError(_('perl build failed.'))
 
-def install(parameters = 'install'):
-    '''install source with given parameters.'''
+
+def install(parameters='install'):
+    '''Install source with given parameters.'''
     if can_access_file('Makefile'):
         if system('make %s' % parameters):
-            raise InstallError, _('Make failed.')
+            raise InstallError(_('Make failed.'))
     else:
         if system('perl Build install'):
-            raise MakeError, _('perl install failed.')
+            raise InstallError(_('perl install failed.'))
 
     removePacklist()
     removePodfiles()
 
-def removePacklist(path = 'usr/lib/perl5/'):
-    ''' cleans .packlist file from perl packages '''
+
+def removePacklist(path='usr/lib/perl5/'):
+    '''Cleans .packlist file from perl packages.'''
     full_path = '%s/%s' % (get.installDIR(), path)
     for root, dirs, files in os.walk(full_path):
         for packFile in files:
@@ -88,8 +95,9 @@ def removePacklist(path = 'usr/lib/perl5/'):
                     unlink('%s/%s' % (root, packFile))
                     removeEmptydirs(root)
 
-def removePodfiles(path = 'usr/lib/perl5/'):
-    ''' cleans *.pod files from perl packages '''
+
+def removePodfiles(path='usr/lib/perl5/'):
+    '''Cleans *.pod files from perl packages.'''
     full_path = '%s/%s' % (get.installDIR(), path)
     for root, dirs, files in os.walk(full_path):
         for packFile in files:
@@ -98,8 +106,9 @@ def removePodfiles(path = 'usr/lib/perl5/'):
                     unlink('%s/%s' % (root, packFile))
                     removeEmptydirs(root)
 
+
 def removeEmptydirs(d):
-    ''' remove empty dirs from perl package if exists after deletion .pod and .packlist files '''
+    '''Remove empty dirs from perl package if exists after deletion of .pod and .packlist files.'''
     if not os.listdir(d) and not d == get.installDIR():
         unlinkDir(d)
         d = d[:d.rfind("/")]

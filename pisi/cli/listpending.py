@@ -11,8 +11,9 @@
 #
 
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -31,11 +32,11 @@ Lists packages waiting to be configured.
     name = ("list-pending", "lp")
 
     def run(self):
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         A = pisi.api.list_pending()
         if len(A):
             for p in pisi.api.generate_pending_order(A):
-                print p
+                print(p)  # Python 3 için parantez eklendi
         else:
             ctx.ui.info(_('There are no packages waiting to be configured'))

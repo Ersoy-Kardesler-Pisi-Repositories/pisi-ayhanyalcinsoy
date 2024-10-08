@@ -12,6 +12,7 @@
 
 import re
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
@@ -24,7 +25,7 @@ import pisi.db.lazydb as lazydb
 class ComponentDB(lazydb.LazyDB):
 
     def __init__(self):
-        lazydb.LazyDB.__init__(self, cacheable=True)
+        super().__init__(cacheable=True)  # Python 3'te super() kullanımında argüman yok.
 
     def init(self):
         component_nodes = {}
@@ -55,11 +56,11 @@ class ComponentDB(lazydb.LazyDB):
             src = spec.getTag("Source")
             components.setdefault(src.getTagData("PartOf"), []).append(src.getTagData("Name"))
         return components
- 
-    def __generate_components(self, doc):
-        return dict(map(lambda x: (x.getTagData("Name"), x.toString()), doc.tags("Component")))
 
-    def has_component(self, name, repo = None):
+    def __generate_components(self, doc):
+        return {x.getTagData("Name"): x.toString() for x in doc.tags("Component")}  # Dictionary comprehension kullanıldı
+
+    def has_component(self, name, repo=None):
         return self.cdb.has_item(name, repo)
 
     def list_components(self, repo=None):
@@ -74,15 +75,15 @@ class ComponentDB(lazydb.LazyDB):
             lang = pisi.pxml.autoxml.LocalText.get_lang()
         found = []
         for name, xml in self.cdb.get_items_iter(repo):
-            if name not in found and terms == filter(lambda term: re.compile(rename % (lang, term), re.I).search(xml) or \
-                                                         re.compile(resum % (lang, term), re.I).search(xml) or \
-                                                         re.compile(redesc % (lang, term), re.I).search(xml), terms):
+            if name not in found and any(
+                re.compile(rename % (lang, term), re.I).search(xml) or
+                re.compile(resum % (lang, term), re.I).search(xml) or
+                re.compile(redesc % (lang, term), re.I).search(xml)
+                for term in terms):
                 found.append(name)
         return found
 
-    # Returns the component in given repo or first found component in repo order if repo is None
-    def get_component(self, component_name, repo = None):
-
+    def get_component(self, component_name, repo=None):
         if not self.has_component(component_name, repo):
             raise Exception(_('Component %s not found') % component_name)
 
@@ -91,114 +92,93 @@ class ComponentDB(lazydb.LazyDB):
 
         try:
             component.packages = self.cpdb.get_item(component_name, repo)
-        except Exception: #FIXME: what exception could we catch here, replace with that.
+        except Exception:  # Hata türünü belirlemeyi gerektirir.
             pass
 
         try:
             component.sources = self.csdb.get_item(component_name, repo)
-        except Exception: #FIXME: what exception could we catch here, replace with that.
+        except Exception:  # Hata türünü belirlemeyi gerektirir.
             pass
 
         return component
 
-    # Returns the component with combined packages and sources from all repos that contain this component
     def get_union_component(self, component_name):
-
         component = pisi.component.Component()
         component.parse(self.cdb.get_item(component_name))
         
         for repo in pisi.db.repodb.RepoDB().list_repos():
             try:
                 component.packages.extend(self.cpdb.get_item(component_name, repo))
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
 
             try:
                 component.sources.extend(self.csdb.get_item(component_name, repo))
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
             
         return component
 
-    # Returns packages of given component from given repo or first found component's packages in repo
-    # order if repo is None. 
-    # If walk is True than also the sub components' packages are returned
     def get_packages(self, component_name, repo=None, walk=False):
-
         component = self.get_component(component_name, repo)
         if not walk:
             return component.packages
 
-        packages = []
-        packages.extend(component.packages)
+        packages = list(component.packages)  # Liste kopyası oluşturuldu.
 
-        sub_components = filter(lambda x:x.startswith(component_name+"."), self.list_components(repo))
+        sub_components = [x for x in self.list_components(repo) if x.startswith(component_name + ".")]
         for sub in sub_components:
             try:
                 packages.extend(self.get_component(sub, repo).packages)
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
 
         return packages
 
-    # Returns the component with combined packages and sources from all repos that contain this component
-    # If walk is True than also the sub components' packages from all repos are returned
     def get_union_packages(self, component_name, walk=False):
-
         component = self.get_union_component(component_name)
         if not walk:
             return component.packages
 
-        packages = []
-        packages.extend(component.packages)
+        packages = list(component.packages)
 
-        sub_components = filter(lambda x:x.startswith(component_name+"."), self.list_components())
+        sub_components = [x for x in self.list_components() if x.startswith(component_name + ".")]
         for sub in sub_components:
             try:
                 packages.extend(self.get_union_component(sub).packages)
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
 
         return packages
 
-    # Returns sources of given component from given repo or first found component's packages in repo
-    # order if repo is None. 
-    # If walk is True than also the sub components' packages are returned
     def get_sources(self, component_name, repo=None, walk=False):
-
         component = self.get_component(component_name, repo)
         if not walk:
             return component.sources
 
-        sources = []
-        sources.extend(component.sources)
+        sources = list(component.sources)
 
-        sub_components = filter(lambda x:x.startswith(component_name+"."), self.list_components(repo))
+        sub_components = [x for x in self.list_components(repo) if x.startswith(component_name + ".")]
         for sub in sub_components:
             try:
                 sources.extend(self.get_component(sub, repo).sources)
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
 
         return sources
 
-    # Returns the component with combined packages and sources from all repos that contain this component
-    # If walk is True than also the sub components' sources from all repos are returned
     def get_union_sources(self, component_name, walk=False):
-
         component = self.get_union_component(component_name)
         if not walk:
             return component.sources
 
-        sources = []
-        sources.extend(component.sources)
+        sources = list(component.sources)
 
-        sub_components = filter(lambda x:x.startswith(component_name+"."), self.list_components())
+        sub_components = [x for x in self.list_components() if x.startswith(component_name + ".")]
         for sub in sub_components:
             try:
                 sources.extend(self.get_union_component(sub).sources)
-            except Exception: #FIXME: what exception could we catch here, replace with that.
+            except Exception:  # Hata türünü belirlemeyi gerektirir.
                 pass
 
         return sources
-

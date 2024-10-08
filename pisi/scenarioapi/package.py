@@ -1,5 +1,5 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2006, TUBITAK/UEKAE
 #
@@ -9,7 +9,6 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import os
 import glob
@@ -24,7 +23,12 @@ __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
 class Package:
-    def __init__(self, name, deps = [], cons = [], date = "2006-18-18", ver = "1.0", partOf="None"):
+    def __init__(self, name, deps=None, cons=None, date="2006-18-18", ver="1.0", partOf="None"):
+        if deps is None:
+            deps = []
+        if cons is None:
+            cons = []
+            
         self.name = name
         self.dependencies = deps
         self.conflicts = cons

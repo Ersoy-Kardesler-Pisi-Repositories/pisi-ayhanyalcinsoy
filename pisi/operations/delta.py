@@ -13,7 +13,7 @@ import os
 
 import gettext
 __trans = gettext.translation("pisi", fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te `ugettext` yerine `gettext` kullanılıyor
 
 import pisi.context as ctx
 import pisi.package
@@ -150,13 +150,12 @@ def create_delta_package(old_package, new_package):
 #  Hash and also path equal ones        (do nothing)
 
 def find_delta(old_files, new_files):
-
     hashto_files = {}
     for f in new_files.list:
         hashto_files.setdefault(f.hash, []).append(f)
 
-    new_hashes = set([f.hash for f in new_files.list])
-    old_hashes = set([f.hash for f in old_files.list])
+    new_hashes = {f.hash for f in new_files.list}
+    old_hashes = {f.hash for f in old_files.list}
     hashes_delta = new_hashes - old_hashes
 
     deltas = []
@@ -171,7 +170,6 @@ def find_delta(old_files, new_files):
     return deltas
 
 def find_relocations(oldfiles, newfiles):
-
     files_new = {}
     for f in newfiles.list:
         files_new.setdefault(f.hash, []).append(f)
@@ -191,7 +189,6 @@ def find_relocations(oldfiles, newfiles):
     return relocations
 
 def find_permission_changes(oldfiles, newfiles):
-
     files_new = {}
     for f in newfiles.list:
         files_new.setdefault(f.hash, []).append(f)

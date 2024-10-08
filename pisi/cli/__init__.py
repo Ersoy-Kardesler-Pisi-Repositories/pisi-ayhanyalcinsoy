@@ -15,7 +15,7 @@ import locale
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # ugettext yerine gettext
 
 import pisi
 import pisi.context as ctx
@@ -30,20 +30,21 @@ class Exception(pisi.Exception):
     pass
 
 
-def printu(obj, err = False):
-    if not isinstance(obj, unicode):
-        obj = unicode(obj)
+def printu(obj, err=False):
+    if not isinstance(obj, str):
+        obj = str(obj)
     if err:
         out = sys.stderr
     else:
         out = sys.stdout
-    out.write(obj.encode('utf-8'))
+    out.write(obj.encode('utf-8').decode('utf-8'))
     out.flush()
+
 
 class CLI(pisi.ui.UI):
     "Command Line Interface"
 
-    def __init__(self, show_debug = False, show_verbose = False):
+    def __init__(self, show_debug=False, show_verbose=False):
         super(CLI, self).__init__(show_debug, show_verbose)
         self.warnings = 0
         self.errors = 0
@@ -51,10 +52,10 @@ class CLI(pisi.ui.UI):
     def close(self):
         pisi.util.xterm_title_reset()
 
-    def output(self, msg, err = False, verbose = False):
+    def output(self, msg, err=False, verbose=False):
         if (verbose and self.show_verbose) or (not verbose):
-            if type(msg)==type(unicode()):
-                msg = msg.encode('utf-8')
+            if isinstance(msg, str):
+                msg = msg.encode('utf-8').decode('utf-8')
             if err:
                 out = sys.stderr
             else:
@@ -62,7 +63,7 @@ class CLI(pisi.ui.UI):
             out.write(msg)
             out.flush()
 
-    def formatted_output(self, msg, verbose = False, noln = False, column=":"):
+    def formatted_output(self, msg, verbose=False, noln=False, column=":"):
         key_width = 20
         line_format = "%(key)-20s%(column)s%(rest)s"
         term_height, term_width = pisi.util.get_terminal_size()
@@ -99,17 +100,15 @@ class CLI(pisi.ui.UI):
             if not noln:
                 new_msg = "%s\n" % new_msg
         msg = new_msg
-        self.output(unicode(msg), verbose=verbose)
+        self.output(str(msg), verbose=verbose)
 
-    def info(self, msg, verbose = False, noln = False):
-        # TODO: need to look at more kinds of info messages
-        # let's cheat from KDE :)
+    def info(self, msg, verbose=False, noln=False):
         if not noln:
             msg = '%s\n' % msg
-        self.output(unicode(msg), verbose=verbose)
+        self.output(str(msg), verbose=verbose)
 
-    def warning(self, msg, verbose = False):
-        msg = unicode(msg)
+    def warning(self, msg, verbose=False):
+        msg = str(msg)
         self.warnings += 1
         if ctx.log:
             ctx.log.warning(msg)
@@ -119,7 +118,7 @@ class CLI(pisi.ui.UI):
             self.output(pisi.util.colorize(msg + '\n', 'brightyellow'), err=True, verbose=verbose)
 
     def error(self, msg):
-        msg = unicode(msg)
+        msg = str(msg)
         self.errors += 1
         if ctx.log:
             ctx.log.error(msg)
@@ -128,24 +127,23 @@ class CLI(pisi.ui.UI):
         else:
             self.output(pisi.util.colorize(msg + '\n', 'brightred'), err=True)
 
-    def action(self, msg, verbose = False):
-        #TODO: this seems quite redundant?
-        msg = unicode(msg)
+    def action(self, msg, verbose=False):
+        msg = str(msg)
         if ctx.log:
             ctx.log.info(msg)
         self.output(pisi.util.colorize(msg + '\n', 'green'))
 
     def choose(self, msg, opts):
-        msg = unicode(msg)
+        msg = str(msg)
         prompt = msg + pisi.util.colorize(' (%s)' % "/".join(opts), 'red')
         while True:
-            s = raw_input(prompt.encode('utf-8'))
+            s = input(prompt.encode('utf-8').decode('utf-8'))
             for opt in opts:
                 if opt.startswith(s):
                     return opt
 
     def confirm(self, msg):
-        msg = unicode(msg)
+        msg = str(msg)
         if ctx.config.options and ctx.config.options.yes_all:
             return True
 
@@ -159,14 +157,13 @@ class CLI(pisi.ui.UI):
         while True:
             tty.tcflush(sys.stdin.fileno(), 0)
             prompt = msg + pisi.util.colorize(_(' (yes/no)'), 'red')
-            s = raw_input(prompt.encode('utf-8'))
+            s = input(prompt.encode('utf-8').decode('utf-8'))
 
             if yes_expr.search(s):
                 return True
 
             if no_expr.search(s):
                 return False
-
 
     def display_progress(self, **ka):
         """ display progress of any operation """
@@ -184,9 +181,9 @@ class CLI(pisi.ui.UI):
         if ka['percent'] == 100:
             self.output(pisi.util.colorize(_(' [complete]\n'), 'gray'))
 
-    def status(self, msg = None):
+    def status(self, msg=None):
         if msg:
-            msg = unicode(msg)
+            msg = str(msg)
             self.output(pisi.util.colorize(msg + '\n', 'brightgreen'))
             pisi.util.xterm_title(msg)
 

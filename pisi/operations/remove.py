@@ -25,7 +25,7 @@ import pisi.util as util
 import pisi.ui as ui
 import pisi.db
 
-def remove(A, ignore_dep = False, ignore_safety = False):
+def remove(A, ignore_dep=False, ignore_safety=False):
     """remove set A of packages from system (A is a list of package names)"""
 
     componentdb = pisi.db.componentdb.ComponentDB()
@@ -43,7 +43,7 @@ def remove(A, ignore_dep = False, ignore_safety = False):
             if refused:
                 raise pisi.Error(_("Safety switch prevents the removal of "
                                    "following packages:\n") +
-                                    util.format_by_columns(sorted(refused)))
+                                  util.format_by_columns(sorted(refused)))
                 A = A - systembase
         else:
             ctx.ui.warning(_("Safety switch: The component system.base cannot be found."))
@@ -56,7 +56,7 @@ def remove(A, ignore_dep = False, ignore_safety = False):
             ctx.ui.info(_('Package %s does not exist. Cannot remove.') % x)
     A = set(Ap)
 
-    if len(A)==0:
+    if len(A) == 0:
         ctx.ui.info(_('No packages to remove.'))
         return False
 
@@ -77,7 +77,7 @@ in the respective order to satisfy dependencies:
     if ctx.get_option('dry_run'):
         return
 
-    ctx.ui.notify(ui.packagestogo, order = order)
+    ctx.ui.notify(ui.packagestogo, order=order)
 
     for x in order:
         if installdb.has_package(x):
@@ -96,7 +96,7 @@ def plan_remove(A):
 
     installdb = pisi.db.installdb.InstallDB()
 
-    G_f = pgraph.PGraph(installdb)               # construct G_f
+    G_f = pgraph.PGraph(installdb)  # construct G_f
 
     # find the (install closure) graph of G_f by package
     # set A using packagedb
@@ -112,7 +112,7 @@ def plan_remove(A):
                 # and unsatisfied dependencies (this is important, too)
                 # satisfied_by_any_installed_other_than is for AnyDependency
                 if installdb.has_package(rev_dep) and depinfo.satisfied_by_installed() and not depinfo.satisfied_by_any_installed_other_than(x):
-                    if not rev_dep in G_f.vertices():
+                    if rev_dep not in G_f.vertices():
                         Bp.add(rev_dep)
                         G_f.add_plain_dep(rev_dep, x)
         B = Bp
@@ -128,7 +128,7 @@ def remove_conflicting_packages(conflicts):
 def remove_obsoleted_packages():
     installdb = pisi.db.installdb.InstallDB()
     packagedb = pisi.db.packagedb.PackageDB()
-    obsoletes = filter(installdb.has_package, packagedb.get_obsoletes())
+    obsoletes = list(filter(installdb.has_package, packagedb.get_obsoletes()))
     if obsoletes:
         if remove(obsoletes, ignore_dep=True, ignore_safety=True):
             raise Exception(_("Obsoleted packages remaining"))

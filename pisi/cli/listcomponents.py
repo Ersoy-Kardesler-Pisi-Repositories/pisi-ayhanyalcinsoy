@@ -11,10 +11,10 @@
 #
 
 import optparse
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -39,24 +39,21 @@ repositories.
     def options(self):
         group = optparse.OptionGroup(self.parser, _("list-components options"))
         group.add_option("-l", "--long", action="store_true",
-                               default=False, help=_("Show in long format"))
+                         default=False, help=_("Show in long format"))
         group.add_option("-r", "--repository", action="store",
-                               type="string", default=None, help=_('Name of the source or package repository'))
+                         type="string", default=None, help=_('Name of the source or package repository'))
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         l = self.componentdb.list_components(ctx.get_option('repository'))
         l.sort()
         for p in l:
             component = self.componentdb.get_component(p)
             if self.options.long:
-                ctx.ui.info(unicode(component))
+                ctx.ui.info(str(component))  # Python 3'te unicode yerine str
             else:
                 lenp = len(p)
-                #if p in installed_list:
-                #    p = util.colorize(p, 'cyan')
                 p = p + ' ' * max(0, 15 - lenp)
-                ctx.ui.info('%s - %s ' % (component.name, unicode(component.summary)))
+                ctx.ui.info('%s - %s ' % (component.name, str(component.summary)))  # Python 3'te unicode yerine str

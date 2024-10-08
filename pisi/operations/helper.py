@@ -14,7 +14,7 @@ import os
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te `ugettext` yerine `gettext` kullanılıyor
 
 import pisi
 import pisi.context as ctx
@@ -24,7 +24,6 @@ import pisi.conflict
 import pisi.db
 
 def reorder_base_packages(order):
-
     componentdb = pisi.db.componentdb.ComponentDB()
     
     """system.base packages must be first in order"""
@@ -83,11 +82,10 @@ def calculate_download_sizes(order):
     try:
         cached_packages_dir = ctx.config.cached_packages_dir()
     except OSError:
-        # happens when cached_packages_dir tried to be created by an unpriviledged user
+        # happens when cached_packages_dir tried to be created by an unprivileged user
         cached_packages_dir = None
 
     for pkg in [packagedb.get_package(name) for name in order]:
-
         delta = None
         if installdb.has_package(pkg.name):
             (version, release, build, distro, distro_release) = installdb.get_version_and_distro_release(pkg.name)

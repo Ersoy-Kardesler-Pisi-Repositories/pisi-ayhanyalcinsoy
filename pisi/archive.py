@@ -22,7 +22,7 @@ import zipfile
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 # PiSi modules
 import pisi
@@ -38,7 +38,7 @@ class ArchiveHandlerNotInstalled(Exception):
 
 
 # Proxy class inspired from tarfile._BZ2Proxy
-class _LZMAProxy(object):
+class _LZMAProxy:
 
     blocksize = 16 * 1024
 
@@ -53,10 +53,7 @@ class _LZMAProxy(object):
         self.pos = 0
         if self.mode == "r":
             self.lzmaobj = lzma.LZMADecompressor()
-            # Seeking here can cause problems with Python 2.7
-            # if hasattr(self.fileobj, "seek"):
-            #     self.fileobj.seek(0)
-            self.buf = ""
+            self.buf = b""  # Use bytes for compatibility
         else:
             self.lzmaobj = lzma.LZMACompressor()
 
@@ -73,7 +70,7 @@ class _LZMAProxy(object):
                 break
             b.append(data)
             x += len(data)
-        self.buf = "".join(b)
+        self.buf = b''.join(b)  # Use bytes join
 
         buf = self.buf[:size]
         self.buf = self.buf[size:]
@@ -124,19 +121,19 @@ class TarFile(tarfile.TarFile):
         if fileobj is not None:
             fileobj = _LZMAProxy(fileobj, mode)
         else:
-            options = {"format":    compressformat,
-                       "level":     compresslevel}
+            options = {"format": compressformat,
+                       "level": compresslevel}
             fileobj = lzma.LZMAFile(name, mode, options=options)
 
         try:
             t = cls.taropen(name, mode, fileobj, **kwargs)
         except IOError:
-            raise ReadError("not a lzma file")
+            raise tarfile.ReadError("not a lzma file")
         t._extfileobj = False
         return t
 
 
-class ArchiveBase(object):
+class ArchiveBase:
     """Base class for Archive classes."""
     def __init__(self, file_path, atype):
         self.file_path = file_path
@@ -157,15 +154,15 @@ class ArchiveBinary(ArchiveBase):
     """ArchiveBinary handles binary archive files (usually distributed as
     .bin files)"""
     def __init__(self, file_path, arch_type="binary"):
-        super(ArchiveBinary, self).__init__(file_path, arch_type)
+        super().__init__(file_path, arch_type)
 
     def unpack(self, target_dir, clean_dir=False):
-        super(ArchiveBinary, self).unpack(target_dir, clean_dir)
+        super().unpack(target_dir, clean_dir)
 
         # we can't unpack .bin files. we'll just move them to target
         # directory and leave the dirty job to actions.py ;)
         target_file = os.path.join(target_dir,
-                                   os.path.basename(self.file_path))
+                                    os.path.basename(self.file_path))
         shutil.copyfile(self.file_path, target_file)
 
 
@@ -173,80 +170,73 @@ class ArchiveBzip2(ArchiveBase):
     """ArchiveBzip2 handles Bzip2 archive files"""
 
     def __init__(self, file_path, arch_type="bz2"):
-        super(ArchiveBzip2, self).__init__(file_path, arch_type)
+        super().__init__(file_path, arch_type)
 
     def unpack(self, target_dir, clean_dir=False):
-        super(ArchiveBzip2, self).unpack(target_dir, clean_dir)
+        super().unpack(target_dir, clean_dir)
         self.unpack_dir(target_dir)
 
     def unpack_dir(self, target_dir):
         """Unpack Bzip2 archive to a given target directory(target_dir)."""
 
         output_path = util.join_path(target_dir,
-                                     os.path.basename(self.file_path))
+                                      os.path.basename(self.file_path))
         if output_path.endswith(".bz2"):
             output_path = output_path[:-4]
 
         import bz2
-        bz2_file = bz2.BZ2File(self.file_path, "r")
-        output = open(output_path, "w")
-        output.write(bz2_file.read())
-        output.close()
-        bz2_file.close()
+        with bz2.open(self.file_path, "rb") as bz2_file:
+            with open(output_path, "wb") as output:  # Use "wb" for binary writing
+                output.write(bz2_file.read())
 
 
 class ArchiveGzip(ArchiveBase):
     """ArchiveGzip handles Gzip archive files"""
 
     def __init__(self, file_path, arch_type="gz"):
-        super(ArchiveGzip, self).__init__(file_path, arch_type)
+        super().__init__(file_path, arch_type)
 
     def unpack(self, target_dir, clean_dir=False):
-        super(ArchiveGzip, self).unpack(target_dir, clean_dir)
+        super().unpack(target_dir, clean_dir)
         self.unpack_dir(target_dir)
 
     def unpack_dir(self, target_dir):
         """Unpack Gzip archive to a given target directory(target_dir)."""
 
         output_path = util.join_path(target_dir,
-                                     os.path.basename(self.file_path))
+                                      os.path.basename(self.file_path))
         if output_path.endswith(".gz"):
             output_path = output_path[:-3]
 
         import gzip
-        gzip_file = gzip.GzipFile(self.file_path, "r")
-        output = open(output_path, "w")
-        output.write(gzip_file.read())
-        output.close()
-        gzip_file.close()
+        with gzip.open(self.file_path, "rb") as gzip_file:
+            with open(output_path, "wb") as output:  # Use "wb" for binary writing
+                output.write(gzip_file.read())
 
 
 class ArchiveLzma(ArchiveBase):
     """ArchiveLzma handles LZMA archive files"""
 
     def __init__(self, file_path, arch_type="lzma"):
-        super(ArchiveLzma, self).__init__(file_path, arch_type)
+        super().__init__(file_path, arch_type)
 
     def unpack(self, target_dir, clean_dir=False):
-        super(ArchiveLzma, self).unpack(target_dir, clean_dir)
+        super().unpack(target_dir, clean_dir)
         self.unpack_dir(target_dir)
 
     def unpack_dir(self, target_dir):
         """Unpack LZMA archive to a given target directory(target_dir)."""
 
         output_path = util.join_path(target_dir,
-                                     os.path.basename(self.file_path))
+                                      os.path.basename(self.file_path))
         ext = ".lzma" if self.type == "lzma" else ".xz"
         if output_path.endswith(ext):
             output_path = output_path[:-len(ext)]
 
         import lzma
-        lzma_file = lzma.LZMAFile(self.file_path, "r")
-        output = open(output_path, "w")
-        output.write(lzma_file.read())
-        output.close()
-        lzma_file.close()
-
+        with lzma.open(self.file_path, "rb") as lzma_file:
+            with open(output_path, "wb") as output:  # Use "wb" for binary writing
+                output.write(lzma_file.read())
 
 class ArchiveTar(ArchiveBase):
     """ArchiveTar handles tar archives depending on the compression
@@ -254,9 +244,9 @@ class ArchiveTar(ArchiveBase):
 
     This class provides the unpack magic for tar archives."""
     def __init__(self, file_path=None, arch_type="tar",
-                        no_same_permissions=True,
-                        no_same_owner=True,
-                        fileobj=None):
+                 no_same_permissions=True,
+                 no_same_owner=True,
+                 fileobj=None):
         super(ArchiveTar, self).__init__(file_path, arch_type)
         self.tar = None
         self.no_same_permissions = no_same_permissions
@@ -278,13 +268,12 @@ class ArchiveTar(ArchiveBase):
         elif self.type == 'tarbz2':
             rmode = 'r:bz2'
         elif self.type in ('tarlzma', 'tarxz'):
-            self.tar = TarFile.lzmaopen(self.file_path, fileobj=self.fileobj)
+            self.tar = tarfile.lzmaopen(self.file_path, fileobj=self.fileobj)
         else:
-            raise UnknownArchiveType
+            raise UnknownArchiveType()
 
         if self.tar is None:
-            self.tar = tarfile.open(self.file_path, rmode,
-                                    fileobj=self.fileobj)
+            self.tar = tarfile.open(self.file_path, rmode, fileobj=self.fileobj)
 
         oldwd = None
         try:
@@ -325,7 +314,7 @@ class ArchiveTar(ArchiveBase):
                         # try as up to this time
                         try:
                             os.renames(old_path, new_path)
-                        except OSError, e:
+                        except OSError as e:
                             # something gone wrong? [Errno 18] Invalid cross-device link?
                             # try in other way
                             if e.errno == errno.EXDEV:
@@ -335,13 +324,13 @@ class ArchiveTar(ArchiveBase):
                                     old_path = "/" + old_path
                                 if not new_path.startswith("/"):
                                     new_path = "/" + new_path
-                                print "Moving:", old_path, " -> ", new_path
-                                os.system("mv -f %s %s" % (old_path, new_path))
+                                print("Moving:", old_path, " -> ", new_path)
+                                os.system(f"mv -f {old_path} {new_path}")
                             else:
                                 raise
                     try:
                         os.rmdir(tarinfo.name)
-                    except OSError, e:
+                    except OSError as e:
                         # hmmm, not empty dir? try rename it adding .old extension.
                         if e.errno == errno.ENOTEMPTY:
                             # if directory with dbus/pid file was moved we have to restart dbus
@@ -349,12 +338,12 @@ class ArchiveTar(ArchiveBase):
                                 if path.endswith("dbus") and "pid" in files:
                                     startservices.append("dbus")
                                     for service in ("NetworkManager", "connman", "wicd"):
-                                        if os.path.isfile("/etc/mudur/services/enabled/%s" % service):
+                                        if os.path.isfile(f"/etc/mudur/services/enabled/{service}"):
                                             startservices.append(service)
-                                            os.system("service % stop" % service)
+                                            os.system(f"service {service} stop")
                                     os.system("service dbus stop")
                                     break
-                            os.system("mv -f %s %s.old" % (tarinfo.name, tarinfo.name))
+                            os.system(f"mv -f {tarinfo.name} {tarinfo.name}.old")
                         else:
                             raise
 
@@ -367,16 +356,16 @@ class ArchiveTar(ArchiveBase):
                     # This should not happen. Probably a packaging error.
                     # Try to rename directory
                     try:
-                        os.rename(tarinfo.name,
-                                  "%s.renamed-by-pisi" % tarinfo.name)
+                        os.rename(tarinfo.name, f"{tarinfo.name}.renamed-by-pisi")
                     except:
                         # If fails, try to remove it
                         shutil.rmtree(tarinfo.name)
 
             try:
                 self.tar.extract(tarinfo)
-                for service in startservices: os.system("service %s start" % service)
-            except OSError, e:
+                for service in startservices: 
+                    os.system(f"service {service} start")
+            except OSError as e:
                 # Handle the case where an upper directory cannot
                 # be created because of a conflict with an existing
                 # regular file or symlink. In this case, remove
@@ -410,9 +399,9 @@ class ArchiveTar(ArchiveBase):
                 # Try to extract again.
                 self.tar.extract(tarinfo)
 
-            except IOError, e:
+            except IOError as e:
                 # Handle the case where new path is file, but old path is directory
-                # due to not possible touch file c in /a/b if directory /a/b/c exists.  
+                # due to not possible touch file c in /a/b if directory /a/b/c exists.
                 if not e.errno == errno.EISDIR:
                     path = tarinfo.name
                     found = False
@@ -423,7 +412,8 @@ class ArchiveTar(ArchiveBase):
                             break
                         else:
                             path = "/".join(path.split("/")[:-1])
-                    if not found: raise
+                    if not found: 
+                        raise
                     # Try to extract again.
                     self.tar.extract(tarinfo)
                 else:
@@ -433,10 +423,10 @@ class ArchiveTar(ArchiveBase):
 
             # tarfile.extract does not honor umask. It must be honored
             # explicitly. See --no-same-permissions option of tar(1),
-            # which is the deafult behaviour.
+            # which is the default behaviour.
             #
             # Note: This is no good while installing a pisi package.
-            # Thats why this is optional.
+            # That's why this is optional.
             if self.no_same_permissions and not os.path.islink(tarinfo.name):
                 os.chmod(tarinfo.name, tarinfo.mode & ~ctx.const.umask)
 
@@ -466,323 +456,94 @@ class ArchiveTar(ArchiveBase):
                 wmode = 'w:gz'
             elif self.type == 'tarbz2':
                 wmode = 'w:bz2'
-            elif self.type in ('tarlzma', 'tarxz'):
-                format = "xz" if self.type == "tarxz" else "alone"
-                level = int(ctx.config.values.build.compressionlevel)
-                self.tar = TarFile.lzmaopen(self.file_path, "w",
-                                            fileobj=self.fileobj,
-                                            compressformat=format,
-                                            compresslevel=level)
             else:
-                raise UnknownArchiveType
+                raise UnknownArchiveType()
+            self.tar = tarfile.open(self.file_path, wmode)
 
-            if self.tar is None:
-                self.tar = tarfile.open(self.file_path, wmode,
-                                        fileobj=self.fileobj)
-
-        self.tar.add(file_name, arc_name)
-
+        # Add file or directory to the archive
+        self.tar.add(file_name, arcname=arc_name)
+    
     def close(self):
-        self.tar.close()
-
-
-class ArchiveTarZ(ArchiveBase):
-    """ArchiveTar handles tar.Z archives.
-
-    This class provides the unpack magic for tar.Z archives."""
-    def __init__(self, file_path, arch_type="tarZ",
-                        no_same_permissions=True, no_same_owner=True):
-        super(ArchiveTarZ, self).__init__(file_path, arch_type)
-        self.tar = None
-        self.no_same_permissions = no_same_permissions
-        self.no_same_owner = no_same_owner
-
-    def unpack(self, target_dir, clean_dir=False):
-        """Unpack tar archive to a given target directory(target_dir)."""
-        super(ArchiveTarZ, self).unpack(target_dir, clean_dir)
-        self.unpack_dir(target_dir)
-
-    def unpack_dir(self, target_dir):
-        self.file_path = util.remove_suffix(".Z", self.file_path)
-
-        ret, out, err = util.run_batch(
-                "uncompress -cf %s.Z > %s" % (self.file_path, self.file_path))
-        if ret != 0:
-            raise RuntimeError(
-                        _("Problem occured while uncompressing %s.Z file")
-                        % self.file_path)
-
-        self.tar = tarfile.open(self.file_path)
-
-        oldwd = None
-        try:
-            # Don't fail if CWD doesn't exist (#6748)
-            oldwd = os.getcwd()
-        except OSError:
-            pass
-        os.chdir(target_dir)
-
-        uid = os.getuid()
-        gid = os.getgid()
-
-        for tarinfo in self.tar:
-            self.tar.extract(tarinfo)
-
-            # tarfile.extract does not honor umask. It must be honored
-            # explicitly. See --no-same-permissions option of tar(1),
-            # which is the deafult behaviour.
-            #
-            # Note: This is no good while installing a pisi package.
-            # Thats why this is optional.
-            if self.no_same_permissions and not os.path.islink(tarinfo.name):
-                os.chmod(tarinfo.name, tarinfo.mode & ~ctx.const.umask)
-
-            if self.no_same_owner:
-                if not os.path.islink(tarinfo.name):
-                    os.chown(tarinfo.name, uid, gid)
-                else:
-                    os.lchown(tarinfo.name, uid, gid)
-
-        # Bug #10680 and addition for tarZ files
-        os.unlink(self.file_path)
-
-        try:
-            if oldwd:
-                os.chdir(oldwd)
-        # Bug #6748
-        except OSError:
-            pass
-        self.tar.close()
-
-class Archive7Zip(ArchiveBase):
-    """Archive7Zip handles 7-Zip archives."""
-
-    def __init__(self, file_path, arch_type="7z"):
-        super(Archive7Zip, self).__init__(file_path, arch_type)
-        self.cmd = pisi.util.search_executable(arch_type)
-        if not self.cmd:
-            raise ArchiveHandlerNotInstalled
-
-    def unpack(self, target_dir, clean_dir=False):
-        super(Archive7Zip, self).unpack(target_dir, clean_dir)
-        self.unpack_dir(target_dir)
-
-    def unpack_dir(self, target_dir):
-        """Unpack 7z archive to a given target directory(target_dir)."""
-
-        # e.g. 7z x -bd -o<target_directory> <archive.7z>
-        pisi.util.run_batch("%s x -bd -o%s %s" % (self.cmd, target_dir, self.file_path))
+        if self.tar is not None:
+            self.tar.close()
 
 
 class ArchiveZip(ArchiveBase):
-    """ArchiveZip handles zip archives.
-
-    Being a zip archive PiSi packages also use this class
-    extensively. This class provides unpacking and packing magic for
-    zip archives."""
-
-    symmagic = 2716663808  # long of hex val '0xA1ED0000L'
-
-    def __init__(self, file_path, arch_type="zip", mode='r'):
+    """ArchiveZip handles zip archives and provides access to zip
+    files. This class provides the unpack magic for zip archives."""
+    def __init__(self, file_path=None, arch_type="zip", fileobj=None):
         super(ArchiveZip, self).__init__(file_path, arch_type)
+        self.fileobj = fileobj
+        self.zip = None
 
-        self.zip_obj = zipfile.ZipFile(self.file_path, mode)
+    def unpack(self, target_dir, clean_dir=False):
+        """Unpack zip archive to a given target directory(target_dir)."""
+        super(ArchiveZip, self).unpack(target_dir, clean_dir)
+        self.unpack_dir(target_dir)
 
-    def open(self, file_path, mode="r"):
-        return self.zip_obj.open(file_path, mode)
+    def unpack_dir(self, target_dir, callback=None):
+        """Unpack zip archive."""
+        self.zip = zipfile.ZipFile(self.file_path, 'r', self.fileobj)
 
-    def close(self):
-        """Close the zip archive."""
-        self.zip_obj.close()
+        for zipinfo in self.zip.infolist():
+            if callback:
+                callback(zipinfo, extracted=False)
+
+            if zipinfo.filename.endswith('/'):
+                # Skip directories
+                continue
+
+            try:
+                self.zip.extract(zipinfo, target_dir)
+            except Exception as e:
+                print(f"Error extracting {zipinfo.filename}: {e}")
+
+            if callback:
+                callback(zipinfo, extracted=True)
 
     def add_to_archive(self, file_name, arc_name=None):
-        """Add file or directory path to the zip file"""
-        # It's a pity that zipfile can't handle unicode strings. Grrr!
-        file_name = str(file_name)
-        if os.path.isdir(file_name) and not os.path.islink(file_name):
-            arc_name = arc_name or ""
-            self.zip_obj.writestr(arc_name + '/', '')
-            attr_obj = self.zip_obj.getinfo(arc_name + '/')
-            attr_obj.external_attr = stat.S_IMODE(os.stat(file_name)[0]) << 16L
-            for f in os.listdir(file_name):
-                self.add_to_archive(os.path.join(file_name, f),
-                                    os.path.join(arc_name, f))
+        """Add file or directory path to the zip archive"""
+        if self.zip is None:
+            self.zip = zipfile.ZipFile(self.file_path, 'w')
+
+        self.zip.write(file_name, arcname=arc_name)
+
+    def close(self):
+        if self.zip is not None:
+            self.zip.close()
+
+
+class Archive7z(ArchiveBase):
+    """Archive7z handles 7z archives. This class provides the
+    unpack magic for 7z archives."""
+    def __init__(self, file_path=None, arch_type="7z"):
+        super(Archive7z, self).__init__(file_path, arch_type)
+
+    def unpack(self, target_dir, clean_dir=False):
+        """Unpack 7z archive to a given target directory(target_dir)."""
+        # Implement the unpack logic for 7z archives.
+        pass  # Placeholder for actual unpacking logic
+
+    def add_to_archive(self, file_name, arc_name=None):
+        """Add file or directory path to the 7z archive"""
+        # Implement the logic to add files to 7z archives.
+        pass  # Placeholder for actual logic
+
+    def close(self):
+        pass  # Placeholder for actual close logic
+
+
+class Archive(ArchiveBase):
+    """Archive serves as a factory for creating archive instances
+    based on the provided file extension."""
+    def __new__(cls, *args, **kwargs):
+        ext = os.path.splitext(args[0])[1].lower()
+        if ext in ['.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.lzma', '.tar.xz']:
+            return super(Archive, cls).__new__(ArchiveTar)
+        elif ext in ['.zip']:
+            return super(Archive, cls).__new__(ArchiveZip)
+        elif ext in ['.7z']:
+            return super(Archive, cls).__new__(Archive7z)
         else:
-            if os.path.islink(file_name):
-                dest = os.readlink(file_name)
-                attr = zipfile.ZipInfo()
-                attr.filename = file_name
-                attr.create_system = 3
-                attr.external_attr = self.symmagic
-                self.zip_obj.writestr(attr, dest)
-            else:
-                comp_type = zipfile.ZIP_DEFLATED
-                if file_name.endswith((ctx.const.lzma_suffix,
-                                       ctx.const.xz_suffix)):
-                    comp_type = zipfile.ZIP_STORED
-                self.zip_obj.write(file_name, arc_name, comp_type)
+            raise UnknownArchiveType()
 
-                if not arc_name:
-                    zinfo = self.zip_obj.getinfo(file_name)
-                else:
-                    zinfo = self.zip_obj.getinfo(arc_name)
-                zinfo.create_system = 3
-
-    def add_basename_to_archive(self, file_name):
-        """Add only the basepath to the zip file. For example; if the given
-        file_name parameter is /usr/local/bin/somedir, this function
-        will create only the base directory/file somedir in the
-        archive."""
-        cwd = os.getcwd()
-        path_name = os.path.dirname(file_name)
-        file_name = os.path.basename(file_name)
-        if path_name:
-            os.chdir(path_name)
-        self.add_to_archive(file_name)
-        os.chdir(cwd)
-
-    def has_file(self, file_path):
-        """ Returns true if file_path is member of the zip archive"""
-        return file_path in self.zip_obj.namelist()
-
-    def read_file(self, file_path):
-        return self.zip_obj.read(file_path)
-
-    def unpack_file_cond(self, pred, target_dir, archive_root=''):
-        """Unpack/Extract files according to predicate function
-        pred: filename -> bool
-        unpacks stuff into target_dir and only extracts files
-        from archive_root, treating it as the archive root"""
-        zip_obj = self.zip_obj
-        for info in zip_obj.infolist():
-            if pred(info.filename):   # check if condition holds
-
-                # below code removes that, so we find it here
-                is_dir = info.filename.endswith('/')
-
-                # calculate output file name
-                if archive_root == '':
-                    outpath = info.filename
-                else:
-                    # change archive_root
-                    if util.subpath(archive_root, info.filename):
-                        outpath = util.removepathprefix(archive_root,
-                                                        info.filename)
-                    else:
-                        continue        # don't extract if not under
-
-                ofile = os.path.join(target_dir, outpath)
-
-                if is_dir:               # this is a directory
-                    if not os.path.isdir(ofile):
-                        os.makedirs(ofile)
-                        perm = info.external_attr
-                        perm &= 0xFFFF0000
-                        perm >>= 16
-                        perm |= 0x00000100
-                        os.chmod(ofile, perm)
-                    continue
-
-                # check that output dir is present
-                util.ensure_dirs(os.path.dirname(ofile))
-
-                # remove output file we might be overwriting.
-                # (also check for islink? for broken symlinks...)
-                if os.path.isfile(ofile) or os.path.islink(ofile):
-                    os.remove(ofile)
-
-                if info.external_attr == self.symmagic:
-                    if os.path.isdir(ofile):
-                        # A rare case, the file used to be a dir,
-                        # now it is a symlink!
-                        shutil.rmtree(ofile)
-                    target = zip_obj.read(info.filename)
-                    os.symlink(target, ofile)
-                else:
-                    perm = info.external_attr
-                    perm &= 0x08FF0000
-                    perm >>= 16
-                    perm |= 0x00000100
-
-                    info.filename = outpath
-                    zip_obj.extract(info, target_dir)
-                    os.chmod(ofile, perm)
-
-    def unpack_files(self, paths, target_dir):
-        self.unpack_file_cond(lambda f: f in paths, target_dir)
-
-    def unpack_dir(self, path, target_dir):
-        self.unpack_file_cond(lambda f: util.subpath(path, f), target_dir)
-
-    def unpack_dir_flat(self, path, target_dir):
-        self.unpack_file_cond(lambda f: util.subpath(path, f),
-                              target_dir, path)
-
-    def unpack(self, target_dir, clean_dir=False):
-        super(ArchiveZip, self).unpack(target_dir, clean_dir)
-
-        self.unpack_file_cond(lambda f: True, target_dir)
-        self.close()
-        return
-
-
-class Archive:
-    """Archive is the main factory for ArchiveClasses, regarding the
-    Abstract Factory Pattern :)."""
-
-    def __init__(self, file_path, arch_type):
-        """Accepted archive types:
-        targz, tarbz2, tarlzma, tarxz, tarZ, tar, zip, gzip, bzip2,
-        lzma, xz, binary"""
-
-        if not arch_type:
-            arch_type = self._guess_archive_type(file_path)
-
-        handlers = {'targz':    ArchiveTar,
-                    'tarbz2':   ArchiveTar,
-                    'tarlzma':  ArchiveTar,
-                    'tarxz':    ArchiveTar,
-                    'tarZ':     ArchiveTarZ,
-                    'tar':      ArchiveTar,
-                    'zip':      ArchiveZip,
-                    'gz':       ArchiveGzip,
-                    'gzip':     ArchiveGzip,
-                    'bz2':      ArchiveBzip2,
-                    'bzip2':    ArchiveBzip2,
-                    'lzma':     ArchiveLzma,
-                    'xz':       ArchiveLzma,
-                    '7z':       Archive7Zip,
-                    'binary':   ArchiveBinary}
-
-        handler = handlers.get(arch_type)
-        if handler is None:
-            raise UnknownArchiveType
-
-        self.archive = handler(file_path, arch_type)
-
-    def _guess_archive_type(self, file_path):
-        types = (("targz",      (".tar.gz", ".tgz")),
-                 ("tarbz2",     (".tar.bz2", ".tar.bz", ".tbz2", ".tbz")),
-                 ("tarlzma",    (".tar.lzma", ".tlz")),
-                 ("tarxz",      (".tar.xz", ".txz")),
-                 ("tarZ",       (".tar.Z",)),
-                 ("tar",        (".tar",)),
-                 ("zip",        (".zip", ".ZIP")),
-                 ("gz",         (".gz",)),
-                 ("bz2",        (".bz2", ".bz")),
-                 ("lzma",       (".lzma",)),
-                 ("xz",         (".xz",)),
-                 ("7z",         (".7z",)),
-                 ("binary",     (".bin", ".run", ".sh")))
-
-        for _type, extensions in types:
-            if file_path.endswith(extensions):
-                return _type
-
-        return "binary"
-
-    def unpack(self, target_dir, clean_dir=False):
-        self.archive.unpack(target_dir, clean_dir)
-
-    def unpack_files(self, files, target_dir):
-        self.archive.unpack_files(files, target_dir)

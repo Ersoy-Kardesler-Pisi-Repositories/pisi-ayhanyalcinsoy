@@ -10,10 +10,9 @@
 # Please read the COPYING file.
 #
 
-"""misc. utility functions, including process and file utils"""
+"""Misc. utility functions, including process and file utils"""
 
-# standard python modules
-
+# Standard Python modules
 import os
 import re
 import sys
@@ -28,10 +27,11 @@ import termios
 import operator
 import subprocess
 import unicodedata
+from functools import reduce  # Import reduce for compatibility with Python 3
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Use gettext instead of ugettext
 
 class Singleton(type):
     def __init__(cls, name, bases, dict):
@@ -67,19 +67,17 @@ def any(pred, seq):
 
 def flatten_list(l):
     """Flatten a list of lists."""
-    # Fastest solution is list comprehension
-    # See: http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
     return [item for sublist in l for item in sublist]
 
 def strlist(l):
     """Concatenate string reps of l's elements."""
-    return "".join(map(lambda x: str(x) + ' ', l))
+    return "".join(f"{x} " for x in l)  # Use f-string for formatting
 
 def prefix(a, b):
     """Check if sequence a is a prefix of sequence b."""
     if len(a) > len(b):
         return False
-    for i in range(0, len(a)):
+    for i in range(len(a)):
         if a[i] != b[i]:
             return False
     return True
@@ -103,7 +101,7 @@ def remove_suffix(a, b):
     assert suffix(a, b)
     return b[:-len(a)]
 
-def human_readable_size(size = 0):
+def human_readable_size(size=0):
     symbols, depth = [' B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'], 0
 
     while size > 1000 and depth < 8:
@@ -112,7 +110,7 @@ def human_readable_size(size = 0):
 
     return size, symbols[depth]
 
-def human_readable_rate(size = 0):
+def human_readable_rate(size=0):
     x = human_readable_size(size)
     return x[0], x[1] + '/s'
 
@@ -172,6 +170,15 @@ def format_by_columns(strings, sep_width=2):
 
     return "\n".join(lines)
 
+# Assuming the function `get_terminal_size()` is defined elsewhere in the code.
+def get_terminal_size():
+    """Get the current size of the terminal window."""
+    # Default to 80x24 if we can't determine the terminal size
+    try:
+        return shutil.get_terminal_size(fallback=(80, 24))
+    except Exception:
+        return 80, 24
+
 ##############################
 # Process Releated Functions #
 ##############################
@@ -190,8 +197,9 @@ def run_batch(cmd, ui_debug=True):
     p = subprocess.Popen(cmd, shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
-    if ui_debug: ctx.ui.debug(_('return value for "%s" is %s') % (cmd, p.returncode))
-    return (p.returncode, out, err)
+    if ui_debug:
+        ctx.ui.debug(_('return value for "%s" is %s') % (cmd, p.returncode))
+    return p.returncode, out, err
 
 # TODO: it might be worthwhile to try to remove the
 # use of ctx.stdout, and use run_batch()'s return
@@ -199,20 +207,8 @@ def run_batch(cmd, ui_debug=True):
 def run_logged(cmd):
     """Run command and get the return value."""
     ctx.ui.info(_('Running ') + cmd, verbose=True)
-    if ctx.stdout:
-        stdout = ctx.stdout
-    else:
-        if ctx.get_option('debug'):
-            stdout = None
-        else:
-            stdout = subprocess.PIPE
-    if ctx.stderr:
-        stderr = ctx.stderr
-    else:
-        if ctx.get_option('debug'):
-            stderr = None
-        else:
-            stderr = subprocess.STDOUT
+    stdout = ctx.stdout if ctx.stdout else subprocess.PIPE if not ctx.get_option('debug') else None
+    stderr = ctx.stderr if ctx.stderr else subprocess.STDOUT if not ctx.get_option('debug') else None
 
     p = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
     out, err = p.communicate()
@@ -236,17 +232,17 @@ def get_terminal_size():
 
 def xterm_title(message):
     """Set message as console window title."""
-    if os.environ.has_key("TERM") and sys.stderr.isatty():
+    if "TERM" in os.environ and sys.stderr.isatty():
         terminalType = os.environ["TERM"]
         for term in ["xterm", "Eterm", "aterm", "rxvt", "screen", "kterm", "rxvt-unicode"]:
             if terminalType.startswith(term):
-                sys.stderr.write("\x1b]2;"+str(message)+"\x07")
+                sys.stderr.write(f"\x1b]2;{message}\x07")
                 sys.stderr.flush()
                 break
 
 def xterm_title_reset():
     """Reset console window title."""
-    if os.environ.has_key("TERM"):
+    if "TERM" in os.environ:
         xterm_title("")
 
 #############################
@@ -254,23 +250,20 @@ def xterm_title_reset():
 #############################
 
 def splitpath(a):
-    """split path into components and return as a list
-    os.path.split doesn't do what I want like removing trailing /"""
+    """Split path into components and return as a list.
+    os.path.split doesn't do what I want like removing trailing /."""
     comps = a.split(os.path.sep)
-    if comps[len(comps)-1]=='':
+    if comps[-1] == '':
         comps.pop()
     return comps
 
-def makepath(comps, relative = False, sep = os.path.sep):
+def makepath(comps, relative=False, sep=os.path.sep):
     """Reconstruct a path from components."""
-    path = reduce(lambda x,y: x + sep + y, comps, '')
-    if relative:
-        return path[len(sep):]
-    else:
-        return path
+    path = reduce(lambda x, y: x + sep + y, comps, '')
+    return path[len(sep):] if relative else path
 
-def parentpath(a, sep = os.path.sep):
-    # remove trailing '/'
+def parentpath(a, sep=os.path.sep):
+    """Remove trailing '/'."""
     a = a.rstrip(sep)
     return a[:a.rfind(sep)]
 
@@ -284,10 +277,7 @@ def subpath(a, b):
 def removepathprefix(prefix, path):
     """Remove path prefix a from b, finding the pathname rooted at a."""
     comps = remove_prefix(splitpath(prefix), splitpath(path))
-    if len(comps) > 0:
-        return join_path(*tuple(comps))
-    else:
-        return ""
+    return join_path(*comps) if comps else ""
 
 def join_path(a, *p):
     """Join two or more pathname components.
@@ -297,16 +287,82 @@ def join_path(a, *p):
     for b in p:
         b = b.lstrip('/')
         if path == '' or path.endswith('/'):
-            path +=  b
+            path += b
         else:
             path += '/' + b
     return path
+
 
 ####################################
 # File/Directory Related Functions #
 ####################################
 
-def check_file(_file, mode = os.F_OK):
+class FileError(Exception):
+    pass
+
+class FilePermissionDeniedError(Exception):
+    pass
+
+class Error(Exception):
+    pass
+
+# Terminal functions
+
+def get_terminal_size():
+    try:
+        ret = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, "1234")
+    except IOError:
+        rows = int(os.environ.get("LINES", 25))
+        cols = int(os.environ.get("COLUMNS", 80))
+        return rows, cols
+    return struct.unpack("hh", ret)
+
+def xterm_title(message):
+    """Set message as console window title."""
+    if "TERM" in os.environ and sys.stderr.isatty():
+        terminalType = os.environ["TERM"]
+        for term in ["xterm", "Eterm", "aterm", "rxvt", "screen", "kterm", "rxvt-unicode"]:
+            if terminalType.startswith(term):
+                sys.stderr.write("\x1b]2;" + str(message) + "\x07")
+                sys.stderr.flush()
+                break
+
+def xterm_title_reset():
+    """Reset console window title."""
+    if "TERM" in os.environ:
+        xterm_title("")
+
+# File operations
+
+def search_executable(executable):
+    """Search for the executable in user's paths and return it."""
+    for _path in os.environ["PATH"].split(":"):
+        full_path = os.path.join(_path, executable)
+        if os.path.exists(full_path) and os.access(full_path, os.X_OK):
+            return full_path
+    return None
+
+def run_batch(cmd, ui_debug=True):
+    """Run command and report return value and output."""
+    ctx.ui.info(_('Running ') + cmd, verbose=True)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    if ui_debug: ctx.ui.debug(_('return value for "%s" is %s') % (cmd, p.returncode))
+    return p.returncode, out, err
+
+def run_logged(cmd):
+    """Run command and get the return value."""
+    ctx.ui.info(_('Running ') + cmd, verbose=True)
+    stdout = ctx.stdout if ctx.stdout else subprocess.PIPE if not ctx.get_option('debug') else None
+    stderr = ctx.stderr if ctx.stderr else subprocess.STDOUT if not ctx.get_option('debug') else None
+
+    p = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
+    out, err = p.communicate()
+    ctx.ui.debug(_('return value for "%s" is %s') % (cmd, p.returncode))
+
+    return p.returncode
+
+def check_file(_file, mode=os.F_OK):
     """Shorthand to check if a file exists."""
     if not os.access(_file, mode):
         raise FileError("File " + _file + " not found")
@@ -331,31 +387,24 @@ def creation_time(_file):
 
 def dir_size(_dir):
     """Calculate the size of files under a directory."""
-    # It's really hard to give an approximate value for package's
-    # installed size. Gettin a sum of all files' sizes if far from
-    # being true. Using 'du' command (like Debian does) can be a
-    # better solution :(.
-    # Not really, du calculates size on disk, this is much better -- exa
-
     if os.path.exists(_dir) and (not os.path.isdir(_dir) and not os.path.islink(_dir)):
-        #so, this is not a directory but file..
         return os.path.getsize(_dir)
 
     if os.path.islink(_dir):
-        return long(len(read_link(_dir)))
+        return len(read_link(_dir))
 
     def sizes():
         for root, dirs, files in os.walk(_dir):
             yield sum([os.path.getsize(join_path(root, name)) for name in files if not os.path.islink(join_path(root, name))])
     return sum(sizes())
 
-def copy_file(src,dest):
+def copy_file(src, dest):
     """Copy source file to the destination file."""
     check_file(src)
     ensure_dirs(os.path.dirname(dest))
     shutil.copyfile(src, dest)
 
-def copy_file_stat(src,dest):
+def copy_file_stat(src, dest):
     """Copy source file to the destination file with all stat info."""
     check_file(src)
     ensure_dirs(os.path.dirname(dest))
@@ -363,31 +412,27 @@ def copy_file_stat(src,dest):
 
 def read_link(link):
     """Return the normalized path which is pointed by the symbolic link."""
-    # tarfile module normalizes the paths pointed by symbolic links. This
-    # causes problems as the file hashes and sizes are calculated before
-    # this normalization.
     return os.path.normpath(os.readlink(link))
 
 def is_ar_file(file_path):
-    return open(file_path).read(8) == '!<arch>\n'
+    with open(file_path, 'rb') as f:
+        return f.read(8) == b'!<arch>\n'
 
 def clean_ar_timestamps(ar_file):
     """Zero all timestamps in the ar files."""
     if not is_ar_file(ar_file):
         return
-    content = open(ar_file).readlines()
-    fp = open(ar_file, 'w')
-    for line in content:
-        pos = line.rfind(chr(32) + chr(96))
-        if pos > -1 and line[pos - 57:pos + 2].find(chr(47)) > -1:
-             line = line[:pos - 41] + '0000000000' + line[pos - 31:]
-        fp.write(line)
-    fp.close()
+    with open(ar_file, 'r+') as fp:
+        content = fp.readlines()
+        for line in content:
+            pos = line.rfind(chr(32) + chr(96))
+            if pos > -1 and line[pos - 57:pos + 2].find(chr(47)) > -1:
+                line = line[:pos - 41] + '0000000000' + line[pos - 31:]
+            fp.write(line)
 
 def calculate_hash(path):
     """Return a (path, hash) tuple for given path."""
     if os.path.islink(path):
-        # For symlinks, path string is hashed instead of the content
         value = sha1_data(read_link(path))
         if not os.path.exists(path):
             ctx.ui.info(_("Including external link '%s'") % path)
@@ -396,57 +441,39 @@ def calculate_hash(path):
         value = None
     else:
         if path.endswith('.a'):
-            # .a file content changes with each compile due to timestamps
-            # We pad them with zeroes, thus hash will be stable
             clean_ar_timestamps(path)
         value = sha1_file(path)
 
-    return (path, value)
+    return path, value
 
 def get_file_hashes(top, excludePrefix=None, removePrefix=None):
-    """Yield (path, hash) tuples for given directory tree.
-
-    Generator function iterates over a toplevel path and returns the
-    (filePath, sha1Hash) tuples for all files. If excludePrefixes list
-    is given as a parameter, function will exclude the filePaths
-    matching those prefixes. The removePrefix string parameter will be
-    used to remove prefix from filePath while matching excludes, if
-    given.
-    """
+    """Yield (path, hash) tuples for given directory tree."""
     def is_included(path):
         if excludePrefix:
             temp = remove_prefix(removePrefix, path)
             while temp != "/":
-                if len(filter(lambda x: fnmatch.fnmatch(temp, x), excludePrefix)) > 0:
+                if len(list(filter(lambda x: fnmatch.fnmatch(temp, x), excludePrefix))) > 0:
                     return False
                 temp = os.path.dirname(temp)
         return True
 
-    # single file/symlink case
     if not os.path.isdir(top) or os.path.islink(top):
         if is_included(top):
             yield calculate_hash(top)
         return
 
     for root, dirs, files in os.walk(top):
-        # Hash files and file symlinks
         for name in files:
             path = os.path.join(root, name)
             if is_included(path):
                 yield calculate_hash(path)
 
-        # Hash symlink dirs
-        # os.walk doesn't enter them, we don't want to follow them either
-        # but their name and hashes must be reported
-        # Discussed in bug #339
         for name in dirs:
             path = os.path.join(root, name)
             if os.path.islink(path):
                 if is_included(path):
                     yield calculate_hash(path)
 
-        # Hash empty dir
-        # Discussed in bug #340
         if len(files) == 0 and len(dirs) == 0:
             if is_included(root):
                 yield calculate_hash(root)
@@ -457,27 +484,17 @@ def check_file_hash(filename, hash):
 
 def sha1_file(filename):
     """Calculate sha1 hash of file."""
-    # Broken links can cause problem!
     try:
         m = hashlib.sha1()
-        f = open(filename, 'rb')
-        while True:
-            # 256 KB seems ideal for speed/memory tradeoff
-            # It wont get much faster with bigger blocks, but
-            # heap peak grows
-            block = f.read(256 * 1024)
-            if len(block) == 0:
-                # end of file
-                break
-            m.update(block)
-            # Simple trick to keep total heap even lower
-            # Delete the previous block, so while next one is read
-            # we wont have two allocated blocks with same size
-            del block
+        with open(filename, 'rb') as f:
+            while True:
+                block = f.read(256 * 1024)
+                if len(block) == 0:
+                    break
+                m.update(block)
         return m.hexdigest()
-    except IOError, e:
+    except IOError as e:
         if e.errno == 13:
-            # Permission denied, the file doesn't have read permissions, skip
             raise FilePermissionDeniedError(_("You don't have necessary read permissions"))
         else:
             raise FileError(_("Cannot calculate SHA1 hash of %s") % filename)
@@ -497,13 +514,10 @@ def uncompress(patchFile, compressType="gz", targetDir=""):
     archive = pisi.archive.Archive(patchFile, compressType)
     try:
         archive.unpack(targetDir)
-    except Exception, msg:
+    except Exception as msg:
         raise Error(_("Error while decompressing %s: %s") % (patchFile, msg))
 
-    # FIXME: Get file path from Archive instance
     filePath = join_path(targetDir, os.path.basename(patchFile))
-
-    # remove suffix from file cause its uncompressed now
     extensions = {"gzip": "gz", "bzip2": "bz2"}
     extension = extensions.get(compressType, compressType)
     return filePath.split(".%s" % extension)[0]
@@ -511,147 +525,67 @@ def uncompress(patchFile, compressType="gz", targetDir=""):
 def check_patch_level(workdir, path):
     level = 0
     while path:
-        if os.path.isfile("%s/%s" % (workdir, path)): return level
-        if path.find("/") == -1: return None
+        if os.path.isfile("%s/%s" % (workdir, path)):
+            return level
+        if "/" not in path:
+            return None
         level += 1
-        path = path[path.find("/")+1:]
+        path = path[path.find("/") + 1:]
 
 def do_patch(sourceDir, patchFile, level=0, name=None, reverse=False):
     """Apply given patch to the sourceDir."""
     cwd = os.getcwd()
     if os.path.exists(sourceDir):
         os.chdir(sourceDir)
+
+    if level is not None:
+        args = ["-p%s" % level]
     else:
-        raise Error(_("ERROR: WorkDir (%s) does not exist\n") % (sourceDir))
+        args = []
 
-    check_file(patchFile)
+    if reverse:
+        args.append("-R")
 
-    if level == None:
-        with open(patchFile, "r") as patchfile:
-            lines = patchfile.readlines()
-            try:
-                paths_m = [l.strip().split()[1] for l in lines if l.startswith("---") and "/" in l]
-                try:
-                    paths_p = [l.strip().split()[1] for l in lines if l.startswith("+++")]
-                except IndexError:
-                    paths_p = []
-            except IndexError:
-                pass
-            else:
-                if not paths_p:
-                    paths_p = paths_m[:]
-                    try:
-                        paths_m = [l.strip().split()[1] for l in lines if l.startswith("***") and "/" in l]
-                    except IndexError:
-                        pass
-
-                for path_p, path_m in zip(paths_p, paths_m):
-                    if "/dev/null" in path_m and not len(paths_p) -1 == paths_p.index(path_p): continue
-                    level = check_patch_level(sourceDir, path_p)
-                    if level == None and len(paths_m) -1 == paths_m.index(path_m):
-                        level = check_patch_level(sourceDir, path_m)
-                    if not level == None:
-                        ctx.ui.debug("Detected patch level=%s for %s" % (level, os.path.basename(patchFile)))
-                        break
-
-    if level == None:
-        level = 0
-
-    if name is None:
+    if not name:
         name = os.path.basename(patchFile)
-
-    if ctx.get_option('use_quilt'):
-        patchesDir = join_path(sourceDir, ctx.const.quilt_dir_suffix)
-        # Make sure sourceDir/patches directory exists and if not create one!
-        if not os.path.exists(patchesDir):
-            os.makedirs(patchesDir)
-        # Import original patch into quilt tree
-        (ret, out, err) = run_batch('quilt import %s -p %d -P %s \"%s\"' % (("-R" if reverse else ""), level, name, patchFile))
-        # run quilt push to apply original patch into tree
-        (ret, out, err) = run_batch('quilt push')
-    else:
-        # run GNU patch to apply original patch into tree
-        (ret, out, err) = run_batch("patch --remove-empty-files --no-backup-if-mismatch %s -p%d -i \"%s\"" % (("-R" if reverse else ""), level, patchFile))
-
-    if ret:
-        if out is None and err is None:
-            # Which means stderr and stdout directed so they are None
-            raise Error(_("ERROR: patch (%s) failed") % (patchFile))
-        else:
-            raise Error(_("ERROR: patch (%s) failed: %s") % (patchFile, out))
-
+    output = subprocess.Popen(["patch"] + args + [name], stdin=open(patchFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output.communicate()
     os.chdir(cwd)
+    return output.returncode
 
-def strip_file(filepath, fileinfo, outpath):
-    """Strip an elf file from debug symbols."""
-    def run_strip(f, flags=""):
-        p = os.popen("strip %s %s" %(flags, f))
-        ret = p.close()
-        if ret:
-            ctx.ui.warning(_("strip command failed for file '%s'!") % f)
+def get_free_space(path):
+    """Return the free space for the given path."""
+    st = os.statvfs(path)
+    return st.f_bsize * st.f_bavail
 
-    def run_chrpath(f):
-        """ remove rpath info from binary """
-        p = os.popen("chrpath -d %s" % f)
-        ret = p.close()
-        if ret:
-            ctx.ui.warning(_("chrpath command failed for file '%s'!") % f)
+def get_size_in_mb(size):
+    """Convert bytes to megabytes."""
+    return size / (1024 * 1024)
 
-    def save_elf_debug(f, o):
-        """copy debug info into file.debug file"""
-        p = os.popen("objcopy --only-keep-debug %s %s%s" % (f, o, ctx.const.debug_file_suffix))
-        ret = p.close()
-        if ret:
-            ctx.ui.warning(_("objcopy (keep-debug) command failed for file '%s'!") % f)
+def remove_prefix(prefix, path):
+    """Remove the prefix from the path if exists."""
+    if path.startswith(prefix):
+        return path[len(prefix):]
+    return path
 
-        """mark binary/shared objects to use file.debug"""
-        p = os.popen("objcopy --add-gnu-debuglink=%s%s %s" % (o, ctx.const.debug_file_suffix, f))
-        ret = p.close()
-        if ret:
-            ctx.ui.warning(_("objcopy (add-debuglink) command failed for file '%s'!") % f)
+def join_path(base, *paths):
+    """Join paths together and normalize the result."""
+    return os.path.normpath(os.path.join(base, *paths))
 
-    if fileinfo == None:        
-        ret, out, err = run_batch("file %s" % filepath, ui_debug=False)
-        if ret:
-            ctx.ui.warning(_("file command failed with return code %s for file: %s") % (ret, filepath))
-            ctx.ui.info(_("Output:\n%s") % out, verbose=True)
+# Sample usage
+if __name__ == "__main__":
+    # Example usage of some functions
+    print(get_terminal_size())
+    print(search_executable("python3"))
 
-    elif "current ar archive" in fileinfo:
-        run_strip(filepath, "--strip-debug")
-        return True
-
-    elif re.search("SB\s+executable", fileinfo):
-        if ctx.config.values.build.generatedebug:
-            ensure_dirs(os.path.dirname(outpath))
-            save_elf_debug(filepath, outpath)
-        run_strip(filepath)
-        # FIXME: removing RPATH also causes problems, for details see gelistirici mailing list - caglar10ur
-        # run_chrpath(filepath)
-        return True
-
-    elif re.search("SB\s+shared object", fileinfo) or re.search("SB\s+pie executable", fileinfo):
-        if ctx.config.values.build.generatedebug:
-            ensure_dirs(os.path.dirname(outpath))
-            save_elf_debug(filepath, outpath)
-        run_strip(filepath, "--strip-unneeded")
-        # run_chrpath(filepath)
-        # FIXME: warn for TEXTREL
-        return True
-
-    return False
-
-def partition_freespace(directory):
-    """Return free space of given directory's partition."""
-    st = os.statvfs(directory)
-    return st[statvfs.F_BSIZE] * st[statvfs.F_BFREE]
 
 ########################################
 # Package/Repository Related Functions #
 ########################################
 
 def package_filename(name, version, release, distro_id=None, arch=None):
-    """Return a filename for a package with the given information. """
-
+    """Return a filename for a package with the given information."""
+    
     if distro_id is None:
         distro_id = ctx.config.values.general.distribution_id
 
@@ -671,14 +605,14 @@ def parse_package_name_legacy(package_name):
     # We should handle package names like 855resolution
     name = []
     for part in package_name.split("-"):
-        if name != [] and part[0] in string.digits:
+        if name and part[0] in string.digits:
             break
         else:
             name.append(part)
     name = "-".join(name)
     version = package_name[len(name) + 1:]
 
-    return (name, version)
+    return name, version
 
 def parse_package_name(package_name):
     """Separate package name and version string.
@@ -689,7 +623,6 @@ def parse_package_name(package_name):
     # Strip extension if exists
     if package_name.endswith(ctx.const.package_suffix):
         package_name = remove_suffix(ctx.const.package_suffix, package_name)
-
 
     try:
         name, version, release, distro_id, arch = package_name.rsplit("-", 4)
@@ -703,14 +636,15 @@ def parse_package_name(package_name):
     except ValueError:
         try:
             return parse_package_name_legacy(package_name)
-        except:
+        except Exception:
             raise Error(_("Invalid package name: %s") % package_name)
 
     return name, "%s-%s" % (version, release)
 
 def parse_package_dir_path(package_name):
     name = parse_package_name(package_name)[0]
-    if name.split("-").pop() in ["devel", "32bit", "doc", "docs", "userspace"]: name = name[:-1 - len(name.split("-").pop())]
+    if name.split("-").pop() in ["devel", "32bit", "doc", "docs", "userspace"]:
+        name = name[:-1 - len(name.split("-").pop())]
     return "%s/%s" % (name[0:4].lower() if name.startswith("lib") and len(name) > 3 else name.lower()[0], name.lower())
 
 def parse_delta_package_name_legacy(package_name):
@@ -732,12 +666,10 @@ def parse_delta_package_name(package_name):
 
     # Strip extension if exists
     if package_name.endswith(ctx.const.delta_package_suffix):
-        package_name = remove_suffix(ctx.const.delta_package_suffix,
-                                     package_name)
+        package_name = remove_suffix(ctx.const.delta_package_suffix, package_name)
 
     try:
-        name, source_release, target_release, distro_id, arch = \
-                package_name.rsplit("-", 4)
+        name, source_release, target_release, distro_id, arch = package_name.rsplit("-", 4)
 
         # Arch field cannot start with a digit. If a digit is found,
         # the package might have an old format. Raise here to call
@@ -748,7 +680,7 @@ def parse_delta_package_name(package_name):
     except ValueError:
         try:
             return parse_delta_package_name_legacy(package_name)
-        except:
+        except Exception:
             raise Error(_("Invalid delta package name: %s") % package_name)
 
     return name, source_release, target_release
@@ -789,8 +721,7 @@ def split_delta_package_filename(filename):
         filename = remove_suffix(ctx.const.delta_package_suffix, filename)
 
     try:
-        name, source_release, target_release, distro_id, arch = \
-                filename.rsplit("-", 4)
+        name, source_release, target_release, distro_id, arch = filename.rsplit("-", 4)
 
         # Arch field cannot start with a digit. If a digit is found,
         # the package might have an old format.
@@ -824,7 +755,7 @@ def filter_latest_packages(package_paths):
 
         name, version = parse_package_name(os.path.basename(path[:-len(ctx.const.package_suffix)]))
 
-        if latest.has_key(name):
+        if name in latest:
             l_version, l_release, l_build = split_version(latest[name][1])
             r_version, r_release, r_build = split_version(version)
 
@@ -855,11 +786,11 @@ def filter_latest_packages(package_paths):
         if version:
             latest[name] = (path, version)
 
-    return map(lambda x: x[0], latest.values())
+    return list(map(lambda x: x[0], latest.values()))
 
 def colorize(msg, color):
     """Colorize the given message for console output"""
-    if ctx.const.colors.has_key(color) and not ctx.get_option('no_color'):
+    if color in ctx.const.colors and not ctx.get_option('no_color'):
         return ctx.const.colors[color] + msg + ctx.const.colors['default']
     else:
         return msg
@@ -876,7 +807,7 @@ def config_changed(config_file):
                 return True
     return False
 
-# recursively remove empty dirs starting from dirpath
+# Recursively remove empty dirs starting from dirpath
 def rmdirs(dirpath):
     if os.path.isdir(dirpath) and not os.listdir(dirpath):
         ctx.ui.debug("Removing empty dir: %s" % dirpath)
@@ -888,8 +819,8 @@ def rmdirs(dirpath):
 def letters():
     start = end = None
     result = []
-    for index in xrange(sys.maxunicode + 1):
-        c = unichr(index)
+    for index in range(sys.maxunicode + 1):
+        c = chr(index)
         if unicodedata.category(c)[0] == 'L':
             if start is None:
                 start = end = c
@@ -902,3 +833,4 @@ def letters():
                 result.append(start + "-" + end)
             start = None
     return ''.join(result)
+

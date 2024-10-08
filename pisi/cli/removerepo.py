@@ -12,7 +12,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.api
@@ -26,17 +26,15 @@ Remove all repository information from the system.
 """)
     __metaclass__ = command.autocommand
 
-    def __init__(self,args):
-        super(RemoveRepo, self).__init__(args)
+    def __init__(self, args):
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("remove-repo", "rr")
 
     def run(self):
-
-        if len(self.args)>=1:
+        if len(self.args) >= 1:
             self.init()
             for repo in self.args:
                 pisi.api.remove_repo(repo)
         else:
             self.help()
-            return

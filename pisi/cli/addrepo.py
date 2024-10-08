@@ -11,10 +11,10 @@
 #
 
 import optparse
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # ugettext yerine gettext
 
 import pisi.api
 import pisi.cli.command as command
@@ -30,7 +30,9 @@ Usage: add-repo <repo> <indexuri>
 
 NB: We support only local files (e.g., /a/b/c) and http:// URIs at the moment
 """)
-    __metaclass__ = command.autocommand
+    
+    # Python 3'te metaclass tanımı bu şekilde yapılır
+    __metaclass__ = type
 
     def __init__(self, args):
         super(AddRepo, self).__init__(args)
@@ -39,13 +41,12 @@ NB: We support only local files (e.g., /a/b/c) and http:// URIs at the moment
     name = ("add-repo", "ar")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("add-repo options"))
         group.add_option("--ignore-check", action="store_true", default=False, help=_("Ignore repository distribution check"))
         group.add_option("--no-fetch", action="store_true", default=False, help=_("Does not fetch repository index and does not check distribution match"))
         group.add_option("--at", action="store",
-                               type="int", default=None,
-                               help=_("Add repository at given position (0 is first)"))
+                         type="int", default=None,
+                         help=_("Add repository at given position (0 is first)"))
         self.parser.add_option_group(group)
 
     def warn_and_remove(self, message, repo):
@@ -53,7 +54,6 @@ NB: We support only local files (e.g., /a/b/c) and http:// URIs at the moment
         pisi.api.remove_repo(repo)
 
     def run(self):
-
         if len(self.args) == 2:
             self.init()
             name, indexuri = self.args

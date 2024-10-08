@@ -8,9 +8,8 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
-from pisi.specfile import SpecFile, Package, Update, Path, Action, Archive, AnyDependency
+from pisi.specfile import SpecFile, Package, Update, Path, Action, Archive
 from pisi.dependency import Dependency
 from pisi.conflict import Conflict
 from pisi.pxml.autoxml import LocalText
@@ -51,12 +50,12 @@ class Pspec:
 
     def add_dependencies(self, dependencies):
         # special case of given one dependency package
-        # with depedency versioning info [**kw, name]
+        # with dependency versioning info [**kw, name]
         # [{"versionFrom":"0.4.2"}, "udev"]
-        if type(dependencies[0]) == dict:
+        if isinstance(dependencies[0], dict):
             dep = Dependency()
             (kw, dep.package) = dependencies
-            dep.__dict__[kw.keys()[0]] = kw.values()[0]
+            dep.__dict__[list(kw.keys())[0]] = list(kw.values())[0]
             self.package.packageDependencies.append(dep)
             return
 
@@ -75,10 +74,10 @@ class Pspec:
         # special case of given one conflict package
         # with conflict versioning info [**kw, name]
         # [{"versionFrom":"0.4.2"}, "udev"]
-        if type(conflicts[0]) == dict:
+        if isinstance(conflicts[0], dict):
             conf = Conflict()
             (kw, conf.package) = conflicts
-            conf.__dict__[kw.keys()[0]] = kw.values()[0]
+            conf.__dict__[list(kw.keys())[0]] = list(kw.values())[0]
             self.package.conflicts.append(conf)
             return
 
@@ -119,9 +118,9 @@ class Pspec:
         self.pspec.source.description["en"] = description
 
     def set_packager(self, name, email):
-        self.pspec.source.packager.name = unicode(name)
+        self.pspec.source.packager.name = str(name)  # Updated for Python 3
         self.pspec.source.packager.email = email
-        self.update.name = unicode(name)
+        self.update.name = str(name)  # Updated for Python 3
         self.update.email = email
 
     def add_archive(self, sha1sum, type, uri):
@@ -155,7 +154,7 @@ class Pspec:
 
         self.pspec.packages.append(self.package)
 
-    def set_history(self, date, version, comment = "No Comment", release = "1"):
+    def set_history(self, date, version, comment="No Comment", release="1"):
         self.update.date = date
         self.update.version = version
         self.update.comment = comment

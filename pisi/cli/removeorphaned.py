@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -30,8 +30,8 @@ Remove all orphaned packages from the system.
 """)
     __metaclass__ = command.autocommand
 
-    def __init__(self,args):
-        super(RemoveOrphaned, self).__init__(args)
+    def __init__(self, args):
+        super().__init__(args)  # Python 3'te super() kullanımı
         self.installdb = pisi.db.installdb.InstallDB()
 
     name = ("remove-orphaned", "ro")
@@ -39,15 +39,14 @@ Remove all orphaned packages from the system.
     def options(self):
         group = optparse.OptionGroup(self.parser, _("remove-orphaned options"))
 
-        super(RemoveOrphaned, self).options(group)
+        super().options(group)  # Python 3'te super() kullanımı
         group.add_option("-x", "--exclude", action="append",
-                     default=None, help=_("When removing orphaned, ignore packages and components whose basenames match pattern."))
+                         default=None, help=_("When removing orphaned, ignore packages and components whose basenames match pattern."))
 
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
         orphaned = self.installdb.get_orphaned()
         if ctx.get_option('exclude'):
             orphaned = pisi.blacklist.exclude(orphaned, ctx.get_option('exclude')) 

@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -33,16 +33,15 @@ dirs under /var/lib/pisi
     __metaclass__ = command.autocommand
 
     def __init__(self, args):
-        super(RebuildDb, self).__init__(args)
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("rebuild-db", "rdb")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("rebuild-db options"))
 
         group.add_option("-f", "--files", action="store_true",
-                               default=False, help=_("Rebuild files database"))
+                         default=False, help=_("Rebuild files database"))
 
         self.parser.add_option_group(group)
 

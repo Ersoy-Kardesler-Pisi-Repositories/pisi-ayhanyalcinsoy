@@ -7,26 +7,26 @@ from pisi.actionsapi import get
 from pisi.actionsapi.shelltools import system
 
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır.
 
 
 class ConfigureError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
 
 
 class CompileError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
 
 
 class InstallError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() kullanımı
         self.value = value
         ctx.ui.error(value)
 
@@ -95,5 +95,5 @@ def install(parameters='', build_dir='build'):
         >>> mesontools.install('extra parameters')
         >>> mesontools.install('extra parameters', 'custom_build_dir')
     """
-    if system('DESTDIR=%s ninja -C %s %s install' % (get.installDIR(), build_dir, parameters, )):
+    if system('DESTDIR=%s ninja -C %s %s install' % (get.installDIR(), build_dir, parameters)):
         raise InstallError(_('Install failed.'))

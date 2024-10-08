@@ -1,5 +1,5 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2006, TUBITAK/UEKAE
 #
@@ -16,6 +16,7 @@ import os
 from pisi.scenarioapi.repoops import *
 from pisi.scenarioapi.pisiops import *
 from pisi.scenarioapi.constants import *
+import pisi.util as util
 
 def let_repo_had(package, *args):
     repo_added_package(package, *args)

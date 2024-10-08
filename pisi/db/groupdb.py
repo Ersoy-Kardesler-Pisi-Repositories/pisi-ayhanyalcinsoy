@@ -26,7 +26,7 @@ class GroupNotFound(Exception):
 class GroupDB(lazydb.LazyDB):
 
     def __init__(self):
-        lazydb.LazyDB.__init__(self, cacheable=True)
+        super().__init__(cacheable=True)  # Python 3'te super() kullanımı
 
     def init(self):
         group_nodes = {}
@@ -45,23 +45,20 @@ class GroupDB(lazydb.LazyDB):
     def __generate_components(self, doc):
         groups = {}
         for c in doc.tags("Component"):
-            group = c.getTagData("Group")
-            if not group:
-                group = "unknown"
+            group = c.getTagData("Group") or "unknown"  # Tek satırda kontrol
             groups.setdefault(group, []).append(c.getTagData("Name"))
         return groups
 
     def __generate_groups(self, doc):
-        return dict(map(lambda x: (x.getTagData("Name"), x.toString()), doc.tags("Group")))
+        return {x.getTagData("Name"): x.toString() for x in doc.tags("Group")}  # Dictionary comprehension
 
-    def has_group(self, name, repo = None):
+    def has_group(self, name, repo=None):
         return self.gdb.has_item(name, repo)
 
     def list_groups(self, repo=None):
         return self.gdb.get_item_keys(repo)
 
-    def get_group(self, name, repo = None):
-
+    def get_group(self, name, repo=None):
         if not self.has_group(name, repo):
             raise GroupNotFound(_('Group %s not found') % name)
 

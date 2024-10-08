@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -32,23 +32,20 @@ If no repository is given, all repositories are updated.
 """)
     __metaclass__ = command.autocommand
 
-    def __init__(self,args):
-        super(UpdateRepo, self).__init__(args)
+    def __init__(self, args):
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("update-repo", "ur")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("update-repo options"))
-
         group.add_option("-f", "--force", action="store_true",
-                               default=False,
-                               help=_("Update database in any case"))
-
+                         default=False,
+                         help=_("Update database in any case"))
         self.parser.add_option_group(group)
 
     def run(self):
-        self.init(database = True)
+        self.init(database=True)
 
         if self.args:
             repos = self.args

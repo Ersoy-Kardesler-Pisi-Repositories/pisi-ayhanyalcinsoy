@@ -13,11 +13,7 @@
 """package abstraction methods to add/remove files, extract control files"""
 
 import os.path
-
 import gettext
-__trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
-
 import pisi
 import pisi.context as ctx
 import pisi.archive as archive
@@ -27,6 +23,9 @@ import pisi.file
 import pisi.files
 import pisi.util as util
 import fetcher
+
+__trans = gettext.translation('pisi', fallback=True)
+_ = __trans.gettext
 
 
 class Error(pisi.Error):
@@ -50,7 +49,7 @@ class Package:
             archive_suffix = ctx.const.lzma_suffix
         else:
             # "1.0" format does not have an archive
-            return (None, None)
+            return None, None
 
         archive_name = ctx.const.install_tar + archive_suffix
         return archive_name, archive_format
@@ -64,7 +63,7 @@ class Package:
 
         try:
             self.impl = archive.ArchiveZip(self.filepath, 'zip', mode)
-        except IOError, e:
+        except IOError as e:
             raise Error(_("Cannot open package file: %s") % e)
 
         self.install_archive = None
@@ -101,7 +100,7 @@ class Package:
                 # Bug 3465
                 if ctx.get_option('reinstall'):
                     raise Error(_("There was a problem while fetching '%s'.\nThe package "
-                    "may have been upgraded. Please try to upgrade the package.") % url);
+                                   "may have been upgraded. Please try to upgrade the package.") % url)
                 raise
         else:
             ctx.ui.info(_('%s [cached]') % url.filename())
@@ -122,14 +121,10 @@ class Package:
             return
 
         if self.install_archive is None:
-            archive_name, archive_format = \
-                    self.archive_name_and_format(self.format)
-            self.install_archive_path = util.join_path(self.tmp_dir,
-                                                       archive_name)
+            archive_name, archive_format = self.archive_name_and_format(self.format)
+            self.install_archive_path = util.join_path(self.tmp_dir, archive_name)
             ctx.build_leftover = self.install_archive_path
-            self.install_archive = archive.ArchiveTar(
-                                            self.install_archive_path,
-                                            archive_format)
+            self.install_archive = archive.ArchiveTar(self.install_archive_path, archive_format)
 
         self.install_archive.add_to_archive(name, arcname)
 
@@ -160,8 +155,7 @@ class Package:
             ctx.build_leftover = None
 
     def get_install_archive(self):
-        archive_name, archive_format = \
-                self.archive_name_and_format(self.format)
+        archive_name, archive_format = self.archive_name_and_format(self.format)
 
         if archive_name is None or not self.impl.has_file(archive_name):
             return
@@ -176,7 +170,7 @@ class Package:
 
     def extract(self, outdir):
         """Extract entire package contents to directory"""
-        self.extract_dir('', outdir)         # means package root
+        self.extract_dir('', outdir)  # means package root
 
     def extract_files(self, paths, outdir):
         """Extract paths to outdir"""
@@ -207,24 +201,23 @@ class Package:
             if not extracted:
                 # Installing packages (especially shared libraries) is a
                 # bit tricky. You should also change the inode if you
-                # change the file, cause the file is opened allready and
+                # change the file, cause the file is opened already and
                 # accessed. Removing and creating the file will also
                 # change the inode and will do the trick (in fact, old
                 # file will be deleted only when its closed).
-                # 
+                #
                 # Also, tar.extract() doesn't write on symlinks... Not any
                 # more :).
                 if os.path.isfile(tarinfo.name) or os.path.islink(tarinfo.name):
                     try:
                         os.unlink(tarinfo.name)
-                    except OSError, e:
+                    except OSError as e:
                         ctx.ui.warning(e)
 
             else:
                 # Added for package-manager
                 if tarinfo.name.endswith(".desktop"):
                     ctx.ui.notify(pisi.ui.desktopfile, desktopfile=tarinfo.name)
-
 
         tar = self.get_install_archive()
 
@@ -239,7 +232,7 @@ class Package:
         this is the function used by the installer"""
         self.impl.unpack_dir_flat(dir, outdir)
 
-    def extract_to(self, outdir, clean_dir = False):
+    def extract_to(self, outdir, clean_dir=False):
         """Extracts contents of the archive to outdir. Before extracting if clean_dir 
         is set, outdir is deleted with its contents"""
         self.impl.unpack(outdir, clean_dir)
@@ -267,10 +260,7 @@ class Package:
         self.metadata = self.get_metadata()
 
     def pkg_dir(self):
-        packageDir = self.metadata.package.name + '-' \
-                     + self.metadata.package.version + '-' \
-                     + self.metadata.package.release
-
+        packageDir = f"{self.metadata.package.name}-{self.metadata.package.version}-{self.metadata.package.release}"
         return os.path.join(ctx.config.packages_dir(), packageDir)
 
     def comar_dir(self):

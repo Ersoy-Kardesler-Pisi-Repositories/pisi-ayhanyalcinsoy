@@ -12,11 +12,12 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.api
 import pisi.cli.command as command
+
 
 class DeleteCache(command.Command):
     __doc__ = _("""Delete cache files
@@ -27,7 +28,10 @@ Sources, packages and temporary files are stored
 under /var directory. Since these accumulate they can
 consume a lot of disk space.""")
 
-    __metaclass__ = command.autocommand
+    # Python 2'de __metaclass__ kullanılırdı, Python 3'te class başlığına doğrudan yazılır.
+    # Bu yüzden `autocommand` metaclass Python 3'e göre şu şekilde tanımlanır:
+    class Meta(command.autocommand):
+        pass
 
     def __init__(self, args=None):
         super(DeleteCache, self).__init__(args)

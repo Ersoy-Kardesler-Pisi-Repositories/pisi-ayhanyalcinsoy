@@ -13,14 +13,14 @@
 """Simplifies working with URLs, purl module provides common URL
 parsing and processing"""
 
-import urlparse
+import urllib.parse as urlparse
 import os.path
-
 import gettext
-__trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
 
-class URI(object):
+__trans = gettext.translation('pisi', fallback=True)
+_ = __trans.gettext  # Değişiklik yapıldı, ugettext yerine gettext kullanıldı.
+
+class URI:
     """URI class provides a URL parser and simplifies working with
     URLs."""
 
@@ -40,29 +40,24 @@ class URI(object):
         self.__authinfo = None
 
     def get_uri(self):
-        if self.__uri:
-            return self.__uri
-        return None
+        return self.__uri if self.__uri else None
 
     def set_uri(self, uri):
         # (scheme, location, path, params, query, fragment)
         uri = str(uri)
         u = urlparse.urlparse(uri, "file")
-        self.__scheme = u[0]
-        self.__location = u[1]
-        self.__path = u[2]
+        self.__scheme = u.scheme
+        self.__location = u.netloc
+        self.__path = u.path
         self.__filename = os.path.basename(self.__path)
-        self.__params = u[3]
-        self.__query = u[4]
-        self.__fragment = u[5]
+        self.__params = u.params
+        self.__query = u.query
+        self.__fragment = u.fragment
 
         self.__uri = uri
 
     def is_local_file(self):
-        if self.scheme() == "file":
-            return True
-        else:
-            return False
+        return self.scheme() == "file"
 
     def is_remote_file(self):
         return not self.is_local_file()
@@ -73,10 +68,10 @@ class URI(object):
     def is_relative_path(self):
         return not self.is_absolute_path()
 
-    def set_auth_info(self, authTuple):
-        if not isinstance(authTuple, tuple):
-            raise Exception, _("setAuthInfo needs a tuple (user, pass)")
-        self.__authinfo = authTuple
+    def set_auth_info(self, auth_tuple):
+        if not isinstance(auth_tuple, tuple):
+            raise Exception(_("set_auth_info needs a tuple (user, pass)"))
+        self.__authinfo = auth_tuple
 
     def auth_info(self):
         return self.__authinfo

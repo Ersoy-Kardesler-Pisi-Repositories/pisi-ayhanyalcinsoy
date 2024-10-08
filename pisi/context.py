@@ -10,7 +10,7 @@
 # Please read the COPYING file.
 #
 
-# global variables here
+# Global variables here
 
 import signal
 
@@ -25,14 +25,15 @@ config = None
 
 log = None
 
-# used for bug #10568
+# Used for bug #10568
 locked = False
 
 def set_option(opt, val):
-    config.set_option(opt, val)
+    if config:  # Ensure config is not None before calling
+        config.set_option(opt, val)
 
 def get_option(opt):
-    return config and config.get_option(opt)
+    return config.get_option(opt) if config else None
 
 ui = pisi.ui.UI()
 
@@ -43,19 +44,21 @@ stderr = None
 comar = True
 comar_updated = False
 dbus_sockname = None
-dbus_timeout = 60 * 60 # in seconds
+dbus_timeout = 60 * 60  # In seconds
 
 # Bug #2879
 # FIXME: Maybe we can create a simple rollback mechanism. There are other
 # places which need this, too.
-# this is needed in build process to clean after if something goes wrong.
+# This is needed in build process to clean up if something goes wrong.
 build_leftover = None
 
 def disable_keyboard_interrupts():
-    sig and sig.disable_signal(signal.SIGINT)
+    if sig:  # Ensure sig is not None before calling
+        sig.disable_signal(signal.SIGINT)
 
 def enable_keyboard_interrupts():
-    sig and sig.enable_signal(signal.SIGINT)
+    if sig:  # Ensure sig is not None before calling
+        sig.enable_signal(signal.SIGINT)
 
 def keyboard_interrupt_disabled():
     return sig and sig.signal_disabled(signal.SIGINT)

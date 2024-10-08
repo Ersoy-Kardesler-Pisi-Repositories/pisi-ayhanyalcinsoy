@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -81,13 +81,16 @@ class Index(command.Command):
         from pisi.api import index
         from pisi.file import File
 
-        ctypes = {"bz2": File.COMPRESSION_TYPE_BZ2,
-                  "xz": File.COMPRESSION_TYPE_XZ}
+        ctypes = {
+            "bz2": File.COMPRESSION_TYPE_BZ2,
+            "xz": File.COMPRESSION_TYPE_XZ
+        }
         compression = 0
         for type_str in ctx.get_option("compression_types").split(","):
             compression |= ctypes.get(type_str, 0)
 
-        index(self.args or ["."], ctx.get_option('output'),
+        index(self.args or ["."],
+              ctx.get_option('output'),
               skip_sources=ctx.get_option('skip_sources'),
               skip_signing=ctx.get_option('skip_signing'),
               compression=compression)

@@ -12,7 +12,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -35,13 +35,11 @@ Lists currently tracked repositories.
     name = ("list-repo", "lr")
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
         for repo in self.repodb.list_repos(only_active=False):
             active = _("active") if self.repodb.repo_active(repo) else _("inactive")
             if active == _("active"):
                 ctx.ui.info(util.colorize(_("%s [%s]") % (repo, active), 'green'))
             else:
                 ctx.ui.info(util.colorize(_("%s [%s]") % (repo, active), 'red'))
-            print '  ', self.repodb.get_repo_url(repo)
-
+            print('  ', self.repodb.get_repo_url(repo))  # Python 3 için parantez eklendi

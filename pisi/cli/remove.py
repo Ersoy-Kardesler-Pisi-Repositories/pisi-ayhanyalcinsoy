@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -34,18 +34,18 @@ expanded to package names.
     __metaclass__ = command.autocommand
 
     def __init__(self, args):
-        super(Remove, self).__init__(args)
+        super().__init__(args)  # Python 3'te super() kullanımı
         self.componentdb = pisi.db.componentdb.ComponentDB()
 
     name = ("remove", "rm")
 
     def options(self):
         group = optparse.OptionGroup(self.parser, _("remove options"))
-        super(Remove, self).options(group)
+        super().options(group)  # Python 3'te super() kullanımı
         group.add_option("--purge", action="store_true",
-                     default=False, help=_("Removes everything including changed config files of the package"))
+                         default=False, help=_("Removes everything including changed config files of the package"))
         group.add_option("-c", "--component", action="append",
-                               default=None, help=_("Remove component's and recursive components' packages"))
+                         default=None, help=_("Remove component's and recursive components' packages"))
         self.parser.add_option_group(group)
 
     def run(self):
@@ -64,4 +64,3 @@ expanded to package names.
         packages.extend(self.args)
 
         pisi.api.remove(packages)
-        

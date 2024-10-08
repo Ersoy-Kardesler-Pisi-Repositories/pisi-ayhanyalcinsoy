@@ -12,8 +12,8 @@
 # Standart Python Modules
 import os
 import sys
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
@@ -36,33 +36,33 @@ dirs = pisi.actionsapi.variables.glb.dirs
 generals = pisi.actionsapi.variables.glb.generals
 
 def curDIR():
-    '''returns current work directory's path'''
+    '''Returns current work directory's path.'''
     return os.getcwd()
 
 def curKERNEL():
-    '''returns currently running kernel's version'''
+    '''Returns currently running kernel's version.'''
     return os.uname()[2]
 
 def curPYTHON():
-    ''' returns currently used python's version'''
+    '''Returns currently used python's version.'''
     (a, b, c, x, y) = sys.version_info
-    return 'python%s.%s' % (a, b)
+    return 'python{}.{},'.format(a, b)
 
 def curPERL():
-    ''' returns currently used perl's version'''
-    return os.path.realpath('/usr/bin/perl').split('perl')[1]
+    '''Returns currently used perl's version.'''
+    perl_path = '/usr/bin/perl'
+    if os.path.exists(perl_path):
+        return os.path.realpath(perl_path).split('perl')[1]
+    return None
 
 def ENV(environ):
-    '''returns any given environ variable'''
-    try:
-        return os.environ[environ];
-    except KeyError:
-        return None
+    '''Returns any given environment variable.'''
+    return os.environ.get(environ)
 
 # PİSİ Related Functions
 
 def pkgDIR():
-    '''returns the path of binary packages'''
+    '''Returns the path of binary packages.'''
     '''Default: /var/cache/pisi/packages'''
     return env.pkg_dir
 
@@ -70,15 +70,18 @@ def workDIR():
     return env.work_dir
 
 def installDIR():
-    '''returns the path of binary packages'''
+    '''Returns the path of binary packages.'''
     return env.install_dir
 
 # Pardus Related Functions
 
 def lsbINFO():
     """Returns a dictionary filled through /etc/lsb-release."""
-    return dict([(l.split("=")[0], l.split("=")[1].strip("'\"")) \
-                for l in open("/etc/lsb-release", "r").read().strip().split("\n") if "=" in l])
+    try:
+        with open("/etc/lsb-release", "r") as f:
+            return {l.split("=")[0]: l.split("=")[1].strip("'\"") for l in f.read().strip().split("\n") if "=" in l}
+    except FileNotFoundError:
+        return {}
 
 # PSPEC Related Functions
 
@@ -92,10 +95,10 @@ def srcRELEASE():
     return env.src_release
 
 def srcTAG():
-    return '%s-%s-%s' % (env.src_name, env.src_version, env.src_release)
+    return '{}-{}-{}'.format(env.src_name, env.src_version, env.src_release)
 
 def srcDIR():
-    return '%s-%s' % (env.src_name, env.src_version)
+    return '{}-{}'.format(env.src_name, env.src_version)
 
 # Build Related Functions
 
@@ -106,8 +109,8 @@ def HOST():
     return env.host
 
 def CHOST():
-    # FIXME: Currently it behave same as HOST,
-    # but will be used for cross-compiling when pisi ready...
+    # FIXME: Currently behaves the same as HOST,
+    # but will be used for cross-compiling when pisi is ready...
     return env.host
 
 def CFLAGS():
@@ -123,7 +126,7 @@ def makeJOBS():
     return env.jobs
 
 def buildTYPE():
-    '''returns the current build type'''
+    '''Returns the current build type.'''
     return env.build_type
 
 # Directory Related Functions
@@ -167,7 +170,7 @@ def qtDIR():
 # Binutils Variables
 
 def existBinary(bin):
-    # determine if path has binary
+    '''Determine if path has binary.'''
     path = os.environ['PATH'].split(':')
     for directory in path:
         if os.path.exists(os.path.join(directory, bin)):
@@ -175,13 +178,12 @@ def existBinary(bin):
     return False
 
 def getBinutilsInfo(util):
-    cross_build_name = '%s-%s' % (HOST(), util)
+    cross_build_name = '{}-{}'.format(HOST(), util)
     if not existBinary(cross_build_name):
         if not existBinary(util):
-            raise BinutilsError(_('Util %s cannot be found') % util)
+            raise BinutilsError(_('Util {} cannot be found').format(util))
         else:
-            ctx.ui.debug(_('Warning: %s does not exist, using plain name %s') \
-                     % (cross_build_name, util))
+            ctx.ui.debug(_('Warning: {} does not exist, using plain name {}').format(cross_build_name, util))
             return util
     else:
         return cross_build_name

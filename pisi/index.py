@@ -19,7 +19,7 @@ import multiprocessing
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te gettext yerine kullanılır
 
 import pisi
 import pisi.context as ctx
@@ -68,7 +68,7 @@ class Index(xmlfile.XmlFile):
         pisi.util.ensure_dirs(tmpdir)
 
         # write uri
-        urlfile = file(pisi.util.join_path(tmpdir, 'uri'), 'w')
+        urlfile = open(pisi.util.join_path(tmpdir, 'uri'), 'w')  # Python 3'te 'file' yerine 'open'
         urlfile.write(uri) # uri
         urlfile.close()
 
@@ -93,7 +93,7 @@ class Index(xmlfile.XmlFile):
         deltas = {}
 
         pkgs_sorted = False
-        for fn in os.walk(repo_uri).next()[2]:
+        for fn in next(os.walk(repo_uri))[2]:  # Python 3'te .next() yerine next()
             if fn.endswith(ctx.const.delta_package_suffix) or fn.endswith(ctx.const.package_suffix):
                 pkgpath = os.path.join(repo_uri,
                                        util.parse_package_dir_path(fn))
@@ -151,7 +151,7 @@ class Index(xmlfile.XmlFile):
                 raise
 
         try:
-            obsoletes_list = map(str, self.distribution.obsoletes)
+            obsoletes_list = list(map(str, self.distribution.obsoletes))  # Python 3'te map() nesnesini listeye çevirmek gerekli
         except AttributeError:
             obsoletes_list = []
 
@@ -173,7 +173,7 @@ class Index(xmlfile.XmlFile):
         if latest_packages:
             sorted_pkgs = {}
             for pkg in latest_packages:
-                key = re.search("\/((lib)?[\d\w])\/", pkg[0])
+                key = re.search(r"\/((lib)?[\d\w])\/", pkg[0])
                 key = key.group(1) if key else os.path.dirname(pkg[0]) 
                 try:
                     sorted_pkgs[key].append(pkg)
@@ -205,7 +205,7 @@ def add_package(params):
 
         package = pisi.package.Package(path, 'r')
         md = package.get_metadata()
-        md.package.packageSize = long(os.path.getsize(path))
+        md.package.packageSize = int(os.path.getsize(path))  # long yerine int
         md.package.packageHash = util.sha1_file(path)
         if ctx.config.options and ctx.config.options.absolute_urls:
             md.package.packageURI = os.path.realpath(path)
@@ -217,7 +217,7 @@ def add_package(params):
         if md.errors():
             ctx.ui.info("")
             ctx.ui.error(_('Package %s: metadata corrupt, skipping...') % md.package.name)
-            ctx.ui.error(unicode(Error(*errs)))
+            ctx.ui.error(str(Error(*errs)))  # unicode yerine str
         else:
             # No need to carry these with index (#3965)
             md.package.files = None
@@ -238,7 +238,7 @@ def add_package(params):
 
                     delta = metadata.Delta()
                     delta.packageURI = util.removepathprefix(repo_uri, delta_path)
-                    delta.packageSize = long(os.path.getsize(delta_path))
+                    delta.packageSize = int(os.path.getsize(delta_path))  # long yerine int
                     delta.packageHash = util.sha1_file(delta_path)
                     delta.releaseFrom = src_release
 
@@ -247,17 +247,6 @@ def add_package(params):
         return md.package
 
     except KeyboardInterrupt:
-        # Handle KeyboardInterrupt exception to prevent ugly backtrace of all
-        # worker processes and propagate the exception to main process.
-        #
-        # Probably it's better to use just 'raise' here, but multiprocessing
-        # module has some bugs about that: (python#8296, python#9205 and
-        # python#9207 )
-        #
-        # For now, worker processes do not propagate exceptions other than
-        # Exception (like KeyboardInterrupt), so we have to manually propagate
-        # KeyboardInterrupt exception as an Exception.
-
         raise Exception
 
 def add_groups(path):
@@ -270,26 +259,17 @@ def add_components(path):
     ctx.ui.info(_('Adding components.xml to index'))
     components_xml = component.Components()
     components_xml.read(path)
-    #try:
     return components_xml.components
-    #except:
-    #    raise Error(_('Component in %s is corrupt') % path)
-    #ctx.ui.error(str(Error(*errs)))
 
 def add_distro(path):
     ctx.ui.info(_('Adding distribution.xml to index'))
     distro = component.Distribution()
-    #try:
     distro.read(path)
     return distro
-    #except:
-    #    raise Error(_('Distribution in %s is corrupt') % path)
-    #ctx.ui.error(str(Error(*errs)))
 
 def add_spec(params):
     try:
         path, repo_uri = params
-        #TODO: may use try/except to handle this
         builder = pisi.operations.build.Builder(path)
         builder.fetch_component()
         sf = builder.spec
@@ -303,5 +283,4 @@ def add_spec(params):
         return sf
 
     except KeyboardInterrupt:
-        # Multiprocessing hack, see add_package method for explanation
         raise Exception

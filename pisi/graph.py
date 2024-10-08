@@ -11,21 +11,20 @@
 
 # the most simple minded digraph class ever
 
-
 import pisi
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
-class CycleException(pisi.Exception):
+class CycleException(Exception):  # Updated to inherit from built-in Exception
     def __init__(self, cycle):
         self.cycle = cycle
 
     def __str__(self):
         return _('Encountered cycle %s') % self.cycle
 
-class Digraph(object):
+class Digraph:
 
     def __init__(self):
         self.__v = set()
@@ -42,29 +41,29 @@ class Digraph(object):
         l = []
         for u in self.__v:
             for v in self.__adj[u]:
-                l.append( (u,v) )
+                l.append((u, v))
         return l
 
-    def add_vertex(self, u, data = None):
+    def add_vertex(self, u, data=None):
         "add vertex u, optionally with data"
-        assert not u in self.__v
+        assert u not in self.__v
         self.__v.add(u)
         self.__adj[u] = set()
         if data:
             self.__vdata[u] = data
             self.__edata[u] = {}
 
-    def add_edge(self, u, v, edata = None, udata = None, vdata = None):
+    def add_edge(self, u, v, edata=None, udata=None, vdata=None):
         "add edge u -> v"
-        if not u in self.__v:
+        if u not in self.__v:
             self.add_vertex(u, udata)
-        if not v in self.__v:
+        if v not in self.__v:
             self.add_vertex(v, vdata)
         self.__adj[u].add(v)
-        if edata != None:
+        if edata is not None:
             self.__edata[u][v] = edata
 
-    def add_biedge(self, u, v, edata = None):
+    def add_biedge(self, u, v, edata=None):
         self.add_edge(u, v, edata)
         self.add_edge(v, u, edata)
 
@@ -80,16 +79,15 @@ class Digraph(object):
     def has_vertex(self, u):
         return u in self.__v
 
-    def has_edge(self, u,v):
+    def has_edge(self, u, v):
         if u in self.__v:
             return v in self.__adj[u]
-        else:
-            return False
+        return False
 
     def adj(self, u):
         return self.__adj[u]
 
-    def dfs(self, finish_hook = None):
+    def dfs(self, finish_hook=None):
         self.color = {}
         self.p = {}
         self.d = {}
@@ -150,7 +148,7 @@ class Digraph(object):
         f.write('\n')
         for u in self.vertices():
             for v in self.adj(u):
-                f.write( self.id_str(u) + ' -> ' + self.id_str(v))
+                f.write(self.id_str(u) + ' -> ' + self.id_str(v))
                 self.write_graphviz_elabel(f, u, v)
                 f.write(';\n')
         f.write('\n')
@@ -161,4 +159,3 @@ class Digraph(object):
 
     def write_graphviz_elabel(self, f, u, v):
         pass
-

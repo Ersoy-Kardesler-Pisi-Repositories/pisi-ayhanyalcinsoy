@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -38,12 +38,11 @@ Gives a brief list of sources published in the repositories.
     def options(self):
         group = optparse.OptionGroup(self.parser, _("list-sources options"))
         group.add_option("-l", "--long", action="store_true",
-                               default=False, help=_("Show in long format"))
+                         default=False, help=_("Show in long format"))
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         l = self.sourcedb.list_sources()
         l.sort()
@@ -51,10 +50,8 @@ Gives a brief list of sources published in the repositories.
             sf, repo = self.sourcedb.get_spec_repo(p)
             if self.options.long:
                 ctx.ui.info('[Repository: ' + repo + ']')
-                ctx.ui.info(unicode(sf.source))
+                ctx.ui.info(str(sf.source))  # Python 3 için unicode yerine str kullanıldı
             else:
                 lenp = len(p)
-                #if p in installed_list:
-                #    p = util.colorize(p, 'cyan')
                 p = p + ' ' * max(0, 15 - lenp)
-                ctx.ui.info('%s - %s' % (sf.source.name, unicode(sf.source.summary)))
+                ctx.ui.info('%s - %s' % (sf.source.name, str(sf.source.summary)))  # unicode yerine str

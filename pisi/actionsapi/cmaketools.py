@@ -11,8 +11,9 @@
 
 # Standard Python Modules
 import os
-
 import gettext
+
+# gettext setup
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.ugettext
 
@@ -23,13 +24,11 @@ from pisi.util import join_path
 # ActionsAPI Modules
 import pisi.actionsapi
 import pisi.actionsapi.get as get
-from pisi.actionsapi.shelltools import system
-from pisi.actionsapi.shelltools import can_access_file
-from pisi.actionsapi.shelltools import unlink
+from pisi.actionsapi.shelltools import system, can_access_file, unlink
 
 class ConfigureError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
         if can_access_file('config.log'):
@@ -37,72 +36,66 @@ class ConfigureError(pisi.actionsapi.Error):
 
 class MakeError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
 class InstallError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
 class RunTimeError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
-def configure(parameters = '', installPrefix = '/%s' % get.defaultprefixDIR(), sourceDir = '.'):
-    '''configure source with given cmake parameters = "-DCMAKE_BUILD_TYPE -DCMAKE_CXX_FLAGS ... "'''
+def configure(parameters='', installPrefix='/%s' % get.defaultprefixDIR(), sourceDir='.'):
+    '''Configure source with given cmake parameters = "-DCMAKE_BUILD_TYPE -DCMAKE_CXX_FLAGS ... "'''
     if can_access_file(join_path(sourceDir, 'CMakeLists.txt')):
-        args = 'cmake -DCMAKE_INSTALL_PREFIX=%s \
-                      -DCMAKE_C_FLAGS="%s" \
-                      -DCMAKE_CXX_FLAGS="%s" \
-                      -DCMAKE_LD_FLAGS="%s" \
-                      -DCMAKE_BUILD_TYPE=RelWithDebInfo %s %s' % (installPrefix, get.CFLAGS(), get.CXXFLAGS(), get.LDFLAGS(), parameters, sourceDir)
+        args = f'cmake -DCMAKE_INSTALL_PREFIX={installPrefix} ' \
+               f'-DCMAKE_C_FLAGS="{get.CFLAGS()}" ' \
+               f'-DCMAKE_CXX_FLAGS="{get.CXXFLAGS()}" ' \
+               f'-DCMAKE_LD_FLAGS="{get.LDFLAGS()}" ' \
+               f'-DCMAKE_BUILD_TYPE=RelWithDebInfo {parameters} {sourceDir}'
 
         if system(args):
             raise ConfigureError(_('Configure failed.'))
     else:
         raise ConfigureError(_('No configure script found for cmake.'))
 
-def make(parameters = ''):
-    '''build source with given parameters'''
+def make(parameters=''):
+    '''Build source with given parameters'''
     if ctx.config.get_option("verbose") and ctx.config.get_option("debug"):
-        command = 'make VERBOSE=1 %s %s' % (get.makeJOBS(), parameters)
+        command = f'make VERBOSE=1 {get.makeJOBS()} {parameters}'
     else:
-        command = 'make %s %s' % (get.makeJOBS(), parameters)
+        command = f'make {get.makeJOBS()} {parameters}'
 
     if system(command):
         raise MakeError(_('Make failed.'))
 
 def fixInfoDir():
-    infoDir = '%s/usr/share/info/dir' % get.installDIR()
+    infoDir = f'{get.installDIR()}/usr/share/info/dir'
     if can_access_file(infoDir):
         unlink(infoDir)
 
-def install(parameters = '', argument = 'install'):
-    '''install source into install directory with given parameters'''
+def install(parameters='', argument='install'):
+    '''Install source into install directory with given parameters'''
     # You can't squeeze unix paths with things like 'bindir', 'datadir', etc with CMake
     # http://public.kitware.com/pipermail/cmake/2006-August/010748.html
-    args = 'make DESTDIR="%(destdir)s" \
-                 %(parameters)s \
-                 %(argument)s' % {
-                                     'destdir'      : get.installDIR(),
-                                     'parameters'   : parameters,
-                                     'argument'     : argument,
-                                 }
+    args = f'make DESTDIR="{get.installDIR()}" {parameters} {argument}'
 
     if system(args):
         raise InstallError(_('Install failed.'))
     else:
         fixInfoDir()
 
-def rawInstall(parameters = '', argument = 'install'):
-    '''install source into install directory with given parameters = PREFIX=%s % get.installDIR()'''
+def rawInstall(parameters='', argument='install'):
+    '''Install source into install directory with given parameters = PREFIX=%s % get.installDIR()'''
     if can_access_file('makefile') or can_access_file('Makefile') or can_access_file('GNUmakefile'):
-        if system('make %s %s' % (parameters, argument)):
+        if system(f'make {parameters} {argument}'):
             raise InstallError(_('Install failed.'))
         else:
             fixInfoDir()

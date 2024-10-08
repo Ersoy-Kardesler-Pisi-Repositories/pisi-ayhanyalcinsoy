@@ -16,22 +16,22 @@ import shutil
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır.
 
 # Pisi Modules
 import pisi.context as ctx
 
 # ActionsAPI Modules
 import pisi.actionsapi
-import pisi.actionsapi.get          as get
-import pisi.actionsapi.autotools    as autotools
-import pisi.actionsapi.pisitools    as pisitools
-import pisi.actionsapi.shelltools   as shelltools
+import pisi.actionsapi.get as get
+import pisi.actionsapi.autotools as autotools
+import pisi.actionsapi.pisitools as pisitools
+import pisi.actionsapi.shelltools as shelltools
 
 
 class ConfigureError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)  # Python 3'te super() fonksiyonunu kullanarak çağırıyoruz.
         self.value = value
         ctx.ui.error(value)
 
@@ -89,7 +89,7 @@ def __getExtraVersion():
         # if successful, this is something like:
         # .1 for 2.6.30.1
         # _rc8 for 2.6.30_rc8
-        extraversion = re.split("3.[0-9].[0-9]{2}([._].*)", get.srcVERSION())[1]
+        extraversion = re.split(r"3\.[0-9]\.[0-9]{2}([._].*)", get.srcVERSION())[1]
     except IndexError:
         # e.g. if version == 2.6.30
         pass
@@ -119,7 +119,8 @@ def getKernelVersion(flavour=None):
     kverfile = os.path.join("/etc/kernel", flavour)
 
     if os.path.exists(kverfile):
-        return open(kverfile, "r").read().strip()
+        with open(kverfile, "r") as f:  # Dosyayı açma işlemi için context manager kullanıyoruz.
+            return f.read().strip()
     else:
         # Fail
         raise ConfigureError(_("Can't find kernel version information file %s.") % kverfile)
@@ -139,8 +140,8 @@ def configure():
     # Check configuration with listnewconfig
     try:
         autotools.make("ARCH=%s listnewconfig" % __getKernelARCH())
-    except:
-        pass
+    except Exception as e:  # Hata durumunda bilgi almak için
+        ctx.ui.error(_("An error occurred: %s") % str(e))
 
 
 ###################################
@@ -153,7 +154,8 @@ def dumpVersion():
     if not os.path.exists(destination):
         os.makedirs(destination)
 
-    open(os.path.join(destination, get.srcNAME()), "w").write(__getSuffix())
+    with open(os.path.join(destination, get.srcNAME()), "w") as f:  # Dosya açma işlemi için context manager kullanıyoruz.
+        f.write(__getSuffix())
 
 
 def build(debugSymbols=False):

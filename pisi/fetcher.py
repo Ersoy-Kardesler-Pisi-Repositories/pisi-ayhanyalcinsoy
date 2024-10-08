@@ -20,10 +20,12 @@ import os
 import time
 import base64
 import shutil
-
+import urllib.request
+import urllib.error
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 # pisi modules
 import pisi
@@ -38,34 +40,33 @@ class FetchError(pisi.Error):
 
 class UIHandler:
     def __init__(self, progress):
-        self.filename        = None
-        self.url             = None
-        self.basename        = None
+        self.filename = None
+        self.url = None
+        self.basename = None
         self.downloaded_size = 0
-        self.percent         = None
-        self.rate            = 0.0
-        self.size            = 0
-        self.eta             = '--:--:--'
-        self.symbol          = '--/-'
-        self.last_updated    = 0
-        self.exist_size      = 0
+        self.percent = None
+        self.rate = 0.0
+        self.size = 0
+        self.eta = '--:--:--'
+        self.symbol = '--/-'
+        self.last_updated = 0
+        self.exist_size = 0
 
     def start(self, archive, url, basename, size, text):
         if os.path.exists(archive):
             self.exist_size = os.path.getsize(archive)
-        self.filename   = util.remove_suffix(ctx.const.partial_suffix, basename)
-        self.url        = url
-        self.basename   = basename
+        self.filename = util.remove_suffix(ctx.const.partial_suffix, basename)
+        self.url = url
+        self.basename = basename
         self.total_size = size or 0
-        self.text       = text
+        self.text = text
 
-        self.now    = lambda: time.time()
+        self.now = lambda: time.time()
         self.t_diff = lambda: self.now() - self.s_time
 
         self.s_time = self.now()
 
     def update(self, size):
-
         if self.size == size:
             return
 
@@ -81,7 +82,7 @@ class UIHandler:
             except ZeroDivisionError:
                 return
             if self.total_size:
-                self.eta  = '%02d:%02d:%02d' %\
+                self.eta = '%02d:%02d:%02d' %\
                     tuple([i for i in time.gmtime((self.t_diff() * (100 - self.percent)) / self.percent)[3:6]])
 
         self._update_ui()
@@ -90,15 +91,16 @@ class UIHandler:
         pass
 
     def _update_ui(self):
-        ctx.ui.display_progress(operation       = "fetching",
-                                percent         = self.percent,
-                                filename        = self.filename,
-                                total_size      = self.total_size or self.size,
-                                downloaded_size = self.size,
-                                rate            = self.rate,
-                                eta             = self.eta,
-                                symbol          = self.symbol)
-
+        ctx.ui.display_progress(
+            operation="fetching",
+            percent=self.percent,
+            filename=self.filename,
+            total_size=self.total_size or self.size,
+            downloaded_size=self.size,
+            rate=self.rate,
+            eta=self.eta,
+            symbol=self.symbol
+        )
         self.last_updated = self.now()
 
 
@@ -123,21 +125,13 @@ class Fetcher:
         util.ensure_dirs(self.destdir)
 
     def test(self, timeout=3):
-        import urlgrabber
-
         try:
-            urlgrabber.urlopen(self.url.get_uri(),
-                           http_headers = self._get_http_headers(),
-                           ftp_headers  = self._get_ftp_headers(),
-                           proxies      = self._get_proxies(),
-                           timeout      = timeout,
-                           user_agent   = 'PiSi Fetcher/' + pisi.__version__)
-        except urlgrabber.grabber.URLGrabError:
+            with urllib.request.urlopen(self.url.get_uri(), timeout=timeout) as response:
+                return True
+        except urllib.error.URLError:
             return False
 
-        return True
-
-    def fetch (self):
+    def fetch(self):
         """Return value: Fetched file's full path.."""
 
         # import urlgrabber module
@@ -157,16 +151,16 @@ class Fetcher:
 
         try:
             urlgrabber.urlgrab(self.url.get_uri(),
-                           self.partial_file,
-                           progress_obj = UIHandler(self.progress),
-                           http_headers = self._get_http_headers(),
-                           ftp_headers  = self._get_ftp_headers(),
-                           proxies      = self._get_proxies(),
-                           throttle     = self._get_bandwith_limit(),
-                           reget        = self._test_range_support(),
-                           copy_local   = 1,
-                           user_agent   = 'PiSi Fetcher/' + pisi.__version__)
-        except urlgrabber.grabber.URLGrabError, e:
+                               self.partial_file,
+                               progress_obj=UIHandler(self.progress),
+                               http_headers=self._get_http_headers(),
+                               ftp_headers=self._get_ftp_headers(),
+                               proxies=self._get_proxies(),
+                               throttle=self._get_bandwidth_limit(),
+                               reget=self._test_range_support(),
+                               copy_local=1,
+                               user_agent='PiSi Fetcher/' + pisi.__version__)
+        except urlgrabber.grabber.URLGrabError as e:
             raise FetchError(_('Could not fetch destination file "%s": %s') % (self.url.get_uri(), e))
 
         if os.stat(self.partial_file).st_size == 0:
@@ -180,20 +174,20 @@ class Fetcher:
     def _get_http_headers(self):
         headers = []
         if self.url.auth_info() and (self.url.scheme() == "http" or self.url.scheme() == "https"):
-            enc = base64.encodestring('%s:%s' % self.url.auth_info())
-            headers.append(('Authorization', 'Basic %s' % enc),)
+            enc = base64.b64encode(('%s:%s' % self.url.auth_info()).encode('utf-8')).decode('utf-8')
+            headers.append(('Authorization', 'Basic %s' % enc))
         return tuple(headers)
 
     def _get_ftp_headers(self):
         headers = []
         if self.url.auth_info() and self.url.scheme() == "ftp":
-            enc = base64.encodestring('%s:%s' % self.url.auth_info())
-            headers.append(('Authorization', 'Basic %s' % enc),)
+            enc = base64.b64encode(('%s:%s' % self.url.auth_info()).encode('utf-8')).decode('utf-8')
+            headers.append(('Authorization', 'Basic %s' % enc))
         return tuple(headers)
 
     def _get_proxies(self):
         proxies = {}
-        
+
         if ctx.config.values.general.http_proxy and self.url.scheme() == "http":
             proxies[pisi.uri.URI(ctx.config.values.general.http_proxy).scheme()] = ctx.config.values.general.http_proxy
 
@@ -208,7 +202,7 @@ class Fetcher:
 
         return proxies
 
-    def _get_bandwith_limit(self):
+    def _get_bandwidth_limit(self):
         bandwidth_limit = ctx.config.options.bandwidth_limit or ctx.config.values.general.bandwidth_limit
         if bandwidth_limit and bandwidth_limit != "0":
             ctx.ui.warning(_("Bandwidth usage is limited to %s KB/s") % bandwidth_limit)
@@ -220,17 +214,15 @@ class Fetcher:
         if not os.path.exists(self.partial_file):
             return None
 
-        import urllib2
         try:
-            file_obj = urllib2.urlopen(urllib2.Request(self.url.get_uri()))
-        except urllib2.URLError:
+            with urllib.request.urlopen(self.url.get_uri()) as file_obj:
+                headers = file_obj.info()
+        except urllib.error.URLError:
             ctx.ui.debug(_("Remote file can not be reached. Previously downloaded part of the file will be removed."))
             os.remove(self.partial_file)
             return None
 
-        headers = file_obj.info()
-        file_obj.close()
-        if headers.has_key('Content-Length'):
+        if 'Content-Length' in headers:
             return 'simple'
         else:
             ctx.ui.debug(_("Server doesn't support partial downloads. Previously downloaded part of the file will be over-written."))

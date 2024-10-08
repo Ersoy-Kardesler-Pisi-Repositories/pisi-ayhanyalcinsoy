@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2005-2010 TUBITAK/UEKAE
 #
@@ -12,46 +12,47 @@
 # Standard Python Modules
 import re
 import sys
-from itertools import izip
-from itertools import imap
-from itertools import count
-from itertools import ifilter
-from itertools import ifilterfalse
+from itertools import zip, map, count, filterfalse, filter
 
 # ActionsAPI
 import pisi.actionsapi
 
 def cat(filename):
-    return file(filename).xreadlines()
+    with open(filename) as f:
+        return f.readlines()
 
 class grep:
-    '''keep only lines that match the regexp'''
-    def __init__(self, pat, flags = 0):
+    '''Keep only lines that match the regexp.'''
+    def __init__(self, pat, flags=0):
         self.fun = re.compile(pat, flags).match
+        
     def __ror__(self, input):
-        return ifilter(self.fun, input)
+        return filter(self.fun, input)
 
 class tr:
-    '''apply arbitrary transform to each sequence element'''
+    '''Apply arbitrary transform to each sequence element.'''
     def __init__(self, transform):
         self.tr = transform
+        
     def __ror__(self, input):
-        return imap(self.tr, input)
+        return map(self.tr, input)
 
 class printto:
-    '''print sequence elements one per line'''
-    def __init__(self, out = sys.stdout):
+    '''Print sequence elements one per line.'''
+    def __init__(self, out=sys.stdout):
         self.out = out
-    def __ror__(self,input):
+        
+    def __ror__(self, input):
         for line in input:
-            print >> self.out, line
+            print(line, file=self.out)
 
 printlines = printto(sys.stdout)
 
 class terminator:
-    def __init__(self,method):
+    def __init__(self, method):
         self.process = method
-    def __ror__(self,input):
+        
+    def __ror__(self, input):
         return self.process(input)
 
 aslist = terminator(list)
@@ -61,20 +62,20 @@ join = terminator(''.join)
 enum = terminator(enumerate)
 
 class sort:
-    def __ror__(self,input):
+    def __ror__(self, input):
         ll = list(input)
         ll.sort()
         return ll
+
 sort = sort()
 
 class uniq:
-    def __ror__(self,input):
+    def __ror__(self, input):
+        prev = None
         for i in input:
-            try:
-                if i == prev:
-                    continue
-            except NameError:
-                pass
+            if i == prev:
+                continue
             prev = i
             yield i
+
 uniq = uniq()

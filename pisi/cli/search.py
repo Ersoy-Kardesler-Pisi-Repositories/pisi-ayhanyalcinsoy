@@ -15,7 +15,7 @@ import re
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -35,7 +35,7 @@ database.
     __metaclass__ = command.autocommand
 
     def __init__(self, args):
-        super(Search, self).__init__(args)
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("search", "sr")
 
@@ -60,8 +60,7 @@ database.
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         if not self.args:
             self.help()
@@ -82,20 +81,20 @@ database.
             db = pisi.db.installdb.InstallDB()
             pkgs = db.search_package(self.args, lang, fields, cs)
             get_info = db.get_package
-            get_name_sum = lambda pkg:(pkg.name, pkg.summary)
+            get_name_sum = lambda pkg: (pkg.name, pkg.summary)
         elif ctx.get_option('sourcedb'):
             db = pisi.db.sourcedb.SourceDB()
             pkgs = db.search_spec(self.args, lang, repo, fields, cs)
             get_info = db.get_spec
-            get_name_sum = lambda pkg:(pkg.source.name, pkg.source.summary)
+            get_name_sum = lambda pkg: (pkg.source.name, pkg.source.summary)
         else:
             db = pisi.db.packagedb.PackageDB()
             pkgs = db.search_package(self.args, lang, repo, fields, cs)
             get_info = db.get_package
-            get_name_sum = lambda pkg:(pkg.name, pkg.summary)
+            get_name_sum = lambda pkg: (pkg.name, pkg.summary)
 
         if pkgs:
-            maxlen = max([len(_pkg) for _pkg in pkgs])
+            maxlen = max(len(_pkg) for _pkg in pkgs)  # Python 3'te max() içinde [] yerine () kullanıldı.
 
         for pkg in pkgs:
             pkg_info = get_info(pkg)
@@ -104,7 +103,7 @@ database.
             lenp = len(name)
 
             name = replace.sub(pisi.util.colorize(r"\1", "brightred"), name)
-            if lang and summary.has_key(lang):
+            if lang and lang in summary:
                 summary = replace.sub(pisi.util.colorize(r"\1", "brightred"), str(summary[lang]))
             else:
                 summary = replace.sub(pisi.util.colorize(r"\1", "brightred"), str(summary))

@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.cli.build as build
@@ -40,24 +40,22 @@ You can also give the name of a component.
     name = ("emergeup", "emup")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("emergeup options"))
-        super(EmergeUp, self).add_options(group)
+        super(EmergeUp, self).options()  # Super ile options çağrısı
         group.add_option("-c", "--component", action="store",
-                               default=None, help=_("Emerge available packages under given component"))
+                         default=None, help=_("Emerge available packages under given component"))
         group.add_option("--ignore-file-conflicts", action="store_true",
-                     default=False, help=_("Ignore file conflicts"))
+                         default=False, help=_("Ignore file conflicts"))
         group.add_option("--ignore-package-conflicts", action="store_true",
-                     default=False, help=_("Ignore package conflicts"))
+                         default=False, help=_("Ignore package conflicts"))
         group.add_option("--ignore-comar", action="store_true",
-                               default=False, help=_("Bypass comar configuration agent"))
+                         default=False, help=_("Bypass comar configuration agent"))
         self.parser.add_option_group(group)
 
     def run(self):
-        self.init(database = True)
+        self.init(database=True)
 
         source = pisi.db.sourcedb.SourceDB()
-
         imdb = pisi.db.installdb.InstallDB()
 
         installed_emerge_packages = imdb.list_installed_with_build_host("localhost")
@@ -76,7 +74,7 @@ You can also give the name of a component.
             ctx.ui.info(_('Outputting binary packages in the package cache.'))
             ctx.config.options.output_dir = ctx.config.cached_packages_dir()
 
-	repos = pisi.api.list_repos()
+        repos = pisi.api.list_repos()
         pisi.api.update_repos(repos, ctx.get_option('force'))
-	
+        
         pisi.api.emerge(emerge_up_list)

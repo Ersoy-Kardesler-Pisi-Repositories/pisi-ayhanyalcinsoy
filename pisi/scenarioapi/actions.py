@@ -27,4 +27,5 @@ def install():
         self.filepath = filepath
 
     def write(self):
-        open(self.filepath, "w").write(self.template % self.name)
+        with open(self.filepath, "w") as file:  # Python 3'te context manager kullanarak dosyayı açıyoruz
+            file.write(self.template % self.name)

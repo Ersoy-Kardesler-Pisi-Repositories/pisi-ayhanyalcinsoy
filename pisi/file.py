@@ -22,7 +22,7 @@ import shutil
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 import pisi
 import pisi.uri
@@ -66,7 +66,7 @@ class File:
     @staticmethod
     def make_uri(uri):
         "handle URI arg"
-        if isinstance(uri, basestring):
+        if isinstance(uri, str):
             uri = pisi.uri.URI(uri)
         elif not isinstance(uri, pisi.uri.URI):
             raise Error(_("uri must have type either URI or string"))
@@ -92,11 +92,11 @@ class File:
         compress = File.choose_method(localfile, compress)
         if compress == File.COMPRESSION_TYPE_XZ:
             import lzma
-            open(localfile[:-3], "w").write(lzma.LZMAFile(localfile).read())
+            open(localfile[:-3], "w").write(lzma.LZMAFile(localfile).read().decode())
             localfile = localfile[:-3]
         elif compress == File.COMPRESSION_TYPE_BZ2:
             import bz2
-            open(localfile[:-4], "w").write(bz2.BZ2File(localfile).read())
+            open(localfile[:-4], "w").write(bz2.BZ2File(localfile).read().decode())
             localfile = localfile[:-4]
         return localfile
 
@@ -115,17 +115,13 @@ class File:
 
         if sha1sum:
             sha1filename = File.download(pisi.uri.URI(uri.get_uri() + '.sha1sum'), transfer_dir)
-            sha1f = file(sha1filename)
+            sha1f = open(sha1filename)
             newsha1 = sha1f.read().split("\n")[0]
 
         if uri.is_remote_file() or copylocal:
             tmpfile = check_integrity and uri.filename() + ctx.const.temporary_suffix
             localfile = pisi.util.join_path(transfer_dir, tmpfile or uri.filename())
 
-            # TODO: code to use old .sha1sum file, is this a necessary optimization?
-            #oldsha1fn = localfile + '.sha1sum'
-            #if os.exists(oldsha1fn):
-                #oldsha1 = file(oldsha1fn).readlines()[0]
             if sha1sum and os.path.exists(origfile):
                 oldsha1 = pisi.util.sha1_file(origfile)
                 if (newsha1 == oldsha1):
@@ -136,11 +132,10 @@ class File:
                 ctx.ui.info(_("Fetching %s") % uri.get_uri(), verbose=True)
                 pisi.fetcher.fetch_url(uri, transfer_dir, ctx.ui.Progress, tmpfile)
             else:
-                # copy to transfer dir
                 ctx.ui.info(_("Copying %s to transfer dir") % uri.get_uri(), verbose=True)
                 shutil.copy(uri.get_uri(), localfile)
         else:
-            localfile = uri.get_uri() #TODO: use a special function here?
+            localfile = uri.get_uri()
             if not os.path.exists(localfile):
                 raise IOError(_("File '%s' not found.") % localfile)
             if not os.access(localfile, os.W_OK):
@@ -202,7 +197,7 @@ class File:
             access = 'r'
         else:
             access = 'w'
-        self.__file__ = file(localfile, access)
+        self.__file__ = open(localfile, access)
         self.localfile = localfile
 
     def local_file(self):
@@ -222,23 +217,23 @@ class File:
                 options = {"level": 9}
                 lzma_file = lzma.LZMAFile(compressed_file, "w",
                                           options=options)
-                lzma_file.write(open(self.localfile, "r").read())
+                lzma_file.write(open(self.localfile, "r").read().encode())
                 lzma_file.close()
 
             if ctypes & File.COMPRESSION_TYPE_BZ2:
                 import bz2
                 compressed_file = self.localfile + ".bz2"
                 compressed_files.append(compressed_file)
-                bz2.BZ2File(compressed_file, "w").write(open(self.localfile, "r").read())
+                bz2.BZ2File(compressed_file, "w").write(open(self.localfile, "r").read().encode())
 
             if self.sha1sum:
                 sha1 = pisi.util.sha1_file(self.localfile)
-                cs = file(self.localfile + '.sha1sum', 'w')
+                cs = open(self.localfile + '.sha1sum', 'w')
                 cs.write(sha1)
                 cs.close()
                 for compressed_file in compressed_files:
                     sha1 = pisi.util.sha1_file(compressed_file)
-                    cs = file(compressed_file + '.sha1sum', 'w')
+                    cs = open(compressed_file + '.sha1sum', 'w')
                     cs.write(sha1)
                     cs.close()
 
@@ -256,11 +251,10 @@ class File:
                 sigfilename = File.download(pisi.uri.URI(uri + '.sig'), transfer_dir)
             except KeyboardInterrupt:
                 raise
-            except Exception, e: #FIXME: what exception could we catch here, replace with that.
+            except Exception as e:
                 raise NoSignatureFound(uri)
             if os.system('gpg --verify ' + sigfilename) != 0:
                 raise InvalidSignature(uri)
-            # everything is all right here
 
     def flush(self):
         self.__file__.flush()
@@ -271,8 +265,8 @@ class File:
     def isatty(self):
         return self.__file__.isatty()
 
-    def next(self):
-        return self.__file__.next()
+    def __next__(self):
+        return next(self.__file__)
 
     def read(self, size = None):
         if size:
@@ -292,9 +286,6 @@ class File:
         else:
             return self.__file__.readlines()
 
-    def xreadlines(self):
-        return self.__file__.xreadlines()
-
     def seek(self, offset, whence=0):
         self.__file__.seek(offset, whence)
 
@@ -304,8 +295,8 @@ class File:
     def truncate(self):
         self.__file__.truncate()
 
-    def write(self, str):
-        self.__file__.write(str)
+    def write(self, string):
+        self.__file__.write(string)
 
     def writelines(self, sequence):
         self.__file__.writelines(sequence)

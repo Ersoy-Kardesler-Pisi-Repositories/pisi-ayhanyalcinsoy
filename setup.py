@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2005 - 2007, TUBITAK/UEKAE
@@ -57,7 +57,7 @@ class BuildPo(build):
         for filename in IN_FILES:
             os.system("intltool-extract --type=gettext/xml %s" % filename)
 
-        for root,dirs,filenames in os.walk("pisi"):
+        for root, dirs, filenames in os.walk("pisi"):
             for filename in filenames:
                 if filename.endswith(".py"):
                     filelist.append(os.path.join(root, filename))
@@ -77,7 +77,7 @@ class BuildPo(build):
 
         # Update PO files
         for item in glob.glob1("po", "*.po"):
-            print "Updating .. ", item
+            print("Updating .. ", item)  # Python 3'te print parantezle kullanılır
             os.system("msgmerge --update --no-wrap --sort-by-file po/%s po/%s.pot" % (item, PROJECT))
 
         # Cleanup
@@ -103,7 +103,7 @@ class Install(install):
             if not name.endswith('.po'):
                 continue
             lang = name[:-3]
-            print "Installing '%s' translations..." % lang
+            print("Installing '%s' translations..." % lang)  # Parantez eklendi
             os.popen("msgfmt po/%s.po -o po/%s.mo" % (lang, lang))
             if not self.root:
                 self.root = "/"
@@ -118,7 +118,7 @@ class Install(install):
             os.makedirs(destpath)
         os.chdir('doc')
         for pdf in glob.glob('*.pdf'):
-            print 'Installing', pdf
+            print('Installing', pdf)  # Parantez eklendi
             shutil.copy(pdf, os.path.join(destpath, pdf))
         os.chdir('..')
 
@@ -129,28 +129,27 @@ class Install(install):
             os.makedirs(destpath)
 
         confFile = os.path.join(destpath, "pisi.conf")
-        if os.path.isfile(confFile): # Don't overwrite existing pisi.conf
+        if os.path.isfile(confFile):  # Don't overwrite existing pisi.conf
             return
 
-        pisiconf = open(confFile, "w")
+        with open(confFile, "w") as pisiconf:  # Dosya açma işlemi with ifadesiyle yapıldı
+            klasses = inspect.getmembers(pisi.configfile, inspect.isclass)
+            defaults = [klass for klass in klasses if klass[0].endswith('Defaults')]
 
-        klasses = inspect.getmembers(pisi.configfile, inspect.isclass)
-        defaults = [klass for klass in klasses if klass[0].endswith('Defaults')]
+            for d in defaults:
+                section_name = d[0][:-len('Defaults')].lower()
+                pisiconf.write("[%s]\n" % section_name)
 
-        for d in defaults:
-            section_name = d[0][:-len('Defaults')].lower()
-            pisiconf.write("[%s]\n" % section_name)
+                section_members = [m for m in inspect.getmembers(d[1]) \
+                                   if not m[0].startswith('__') \
+                                   and not m[0].endswith('__')]
 
-            section_members = [m for m in inspect.getmembers(d[1]) \
-                               if not m[0].startswith('__') \
-                               and not m[0].endswith('__')]
-
-            for member in section_members:
-                if member[1] == None or member[1] == "":
-                    pisiconf.write("# %s = %s\n" % (member[0], member[1]))
-                else:
-                    pisiconf.write("%s = %s\n" % (member[0], member[1]))
-            pisiconf.write('\n')
+                for member in section_members:
+                    if member[1] is None or member[1] == "":
+                        pisiconf.write("# %s = %s\n" % (member[0], member[1]))
+                    else:
+                        pisiconf.write("%s = %s\n" % (member[0], member[1]))
+                pisiconf.write('\n')
 
 
 setup(
@@ -169,7 +168,7 @@ setup(
         'build': Build,
         'build_po': BuildPo,
         'install': Install},
-    )
+)
 
 # the below stuff is really nice but we already have a version
 # we can use this stuff for svn snapshots in a separate

@@ -12,7 +12,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.api
@@ -20,22 +20,22 @@ import pisi.api
 class DisableRepo(command.Command):
     __doc__ = _("""Disable repository
 
-Usage: disable-repo [<repo1> <repo2> ... <repon>]
+Usage: disable-repo [<repo1> <repo2> ... <repoN>]
 
-<repoi>: repository name
+<repoN>: repository name
 
 Disabled repositories are not taken into account in operations
 """)
     __metaclass__ = command.autocommand
 
-    def __init__(self,args):
+    def __init__(self, args):
         super(DisableRepo, self).__init__(args)
         self.repodb = pisi.db.repodb.RepoDB()
 
     name = ("disable-repo", "dr")
 
     def run(self):
-        self.init(database = True)
+        self.init(database=True)
 
         if not self.args:
             self.help()

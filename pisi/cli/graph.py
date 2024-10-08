@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.api
@@ -39,24 +39,23 @@ the package in graphviz format to 'pgraph.dot'.
         super(Graph, self).__init__(args)
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("graph options"))
 
         group.add_option("-r", "--repository", action="store",
-                               default=None,
-                               help=_("Specify a particular repository"))
+                         default=None,
+                         help=_("Specify a particular repository"))
         group.add_option("-i", "--installed", action="store_true",
-                               default=False,
-                               help=_("Graph of installed packages"))
+                         default=False,
+                         help=_("Graph of installed packages"))
         group.add_option("--ignore-installed", action="store_true",
-                               default=False,
-                               help=_("Do not show installed packages"))
+                         default=False,
+                         help=_("Do not show installed packages"))
         group.add_option("-R", "--reverse", action="store_true",
-                               default=False,
-                               help=_("Draw reverse dependency graph"))
+                         default=False,
+                         help=_("Draw reverse dependency graph"))
         group.add_option("-o", "--output", action="store",
-                               default='pgraph.dot',
-                               help=_("Dot output file"))
+                         default='pgraph.dot',
+                         help=_("Dot output file"))
 
         self.parser.add_option_group(group)
 
@@ -91,5 +90,6 @@ the package in graphviz format to 'pgraph.dot'.
                 a = pisi.api.list_installed()
 
         g = pisi.api.package_graph(a, packagedb,
-                                   ignore_installed = ctx.get_option('ignore_installed'), reverse = ctx.get_option('reverse'))
-        g.write_graphviz(file(ctx.get_option('output'), 'w'))
+                                   ignore_installed=ctx.get_option('ignore_installed'), reverse=ctx.get_option('reverse'))
+        with open(ctx.get_option('output'), 'w') as output_file:  # 'file' yerine 'open' kullanıldı
+            g.write_graphviz(output_file)

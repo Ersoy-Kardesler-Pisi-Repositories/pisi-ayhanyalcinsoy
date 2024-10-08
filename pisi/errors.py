@@ -10,7 +10,9 @@
 # Please read the COPYING file.
 
 class AnotherInstanceError(Exception):
+    """Raised when an attempt is made to start another instance of a program that should be singleton."""
     pass
 
 class PrivilegeError(Exception):
+    """Raised when an operation requires higher privileges than those available to the current user."""
     pass

@@ -14,13 +14,11 @@ import os
 import time
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext
 
 import pisi.pxml.autoxml as autoxml
 import pisi.pxml.xmlfile as xmlfile
 import pisi.context as ctx
-
-__metaclass__ = autoxml.autoxml
 
 class PackageInfo:
 
@@ -28,7 +26,6 @@ class PackageInfo:
     a_release = [autoxml.String, autoxml.mandatory]
 
     def __str__(self):
-        # FIXME: Do not get these from the config file
         distro_id = ctx.config.values.general.distribution_id
         arch = ctx.config.values.general.architecture
 
@@ -41,7 +38,6 @@ class Repo:
     t_Uri = [autoxml.String, autoxml.mandatory]
 
     def __str__(self):
-        # "update", "remove", "add"
         operation = ""
         if self.operation == "update":
             return _("%s repository is updated.") % self.name
@@ -60,7 +56,6 @@ class Package:
     t_After = [PackageInfo, autoxml.optional]
 
     def __str__(self):
-        # "upgrade", "remove", "install", "reinstall", "downgrade"
         operation = ""
         if self.operation == "upgrade":
             if self.type == "delta":
@@ -84,15 +79,13 @@ class Operation:
     a_date = [autoxml.String, autoxml.mandatory]
     a_time = [autoxml.String, autoxml.mandatory]
 
-    t_Packages = [ [Package], autoxml.optional, "Package"]
-    t_Repos = [ [Repo], autoxml.optional, "Repository"]
+    t_Packages = [[Package], autoxml.optional, "Package"]
+    t_Repos = [[Repo], autoxml.optional, "Repository"]
 
     def __str__(self):
         return self.type
 
 class History(xmlfile.XmlFile):
-
-    __metaclass__ = autoxml.autoxml
 
     tag = "PISI"
 
@@ -144,14 +137,14 @@ class History(xmlfile.XmlFile):
         self.operation.packages.append(package)
 
     def update(self):
-        self.write(os.path.join("%s/%s", ctx.config.history_dir(), self.histfile))
+        self.write(os.path.join(ctx.config.history_dir(), self.histfile))
 
     def _get_latest(self):
 
-        files = filter(lambda h:h.endswith(".xml"), os.listdir(ctx.config.history_dir()))
+        files = list(filter(lambda h: h.endswith(".xml"), os.listdir(ctx.config.history_dir())))
         if not files:
             return "001"
 
-        files.sort(lambda x,y:int(x.split("_")[0]) - int(y.split("_")[0]))
+        files.sort(key=lambda x: int(x.split("_")[0]))  # Python 3'te cmp kaldırıldı, key ile sıralandı
         no, opxml = files[-1].split("_")
         return "%03d" % (int(no) + 1)

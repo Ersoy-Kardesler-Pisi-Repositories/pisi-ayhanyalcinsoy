@@ -32,41 +32,41 @@ class FilesDB(lazydb.LazyDB):
         self.__check_filesdb()
 
     def has_file(self, path):
-        return self.filesdb.has_key(hashlib.md5(path).digest())
+        return hashlib.md5(path.encode('utf-8')).digest() in self.filesdb  # Python 3'te 'has_key' yerine 'in' kullanıldı
 
     def get_file(self, path):
-        return self.filesdb[hashlib.md5(path).digest()], path
+        return self.filesdb[hashlib.md5(path.encode('utf-8')).digest()], path  # Python 3'te 'str' objeleri 'bytes' olarak kodlanmalı
 
     def search_file(self, term):
         if self.has_file(term):
             pkg, path = self.get_file(term)
-            return [(pkg,[path])]
+            return [(pkg, [path])]
 
         installdb = pisi.db.installdb.InstallDB()
         found = []
         for pkg in installdb.list_installed():
-            files_xml = open(os.path.join(installdb.package_path(pkg), ctx.const.files_xml)).read()
-            paths = re.compile('<Path>(.*?%s.*?)</Path>' % re.escape(term), re.I).findall(files_xml)
+            files_xml_path = os.path.join(installdb.package_path(pkg), ctx.const.files_xml)
+            with open(files_xml_path, 'r', encoding='utf-8') as files_xml:  # Dosyayı okurken kodlamayı belirtmek için
+                paths = re.compile('<Path>(.*?%s.*?)</Path>' % re.escape(term), re.I).findall(files_xml.read())
             if paths:
                 found.append((pkg, paths))
         return found
 
     def add_files(self, pkg, files):
-
         self.__check_filesdb()
-
         for f in files.list:
-            self.filesdb[hashlib.md5(f.path).digest()] = pkg
+            self.filesdb[hashlib.md5(f.path.encode('utf-8')).digest()] = pkg  # 'path' kodlanmalı
 
     def remove_files(self, files):
         for f in files:
-            if self.filesdb.has_key(hashlib.md5(f.path).digest()):
-                del self.filesdb[hashlib.md5(f.path).digest()]
+            file_hash = hashlib.md5(f.path.encode('utf-8')).digest()
+            if file_hash in self.filesdb:
+                del self.filesdb[file_hash]
 
     def destroy(self):
-        files_db = os.path.join(ctx.config.info_dir(), ctx.const.files_db)
-        if os.path.exists(files_db):
-            os.unlink(files_db)
+        files_db_path = os.path.join(ctx.config.info_dir(), ctx.const.files_db)
+        if os.path.exists(files_db_path):
+            os.unlink(files_db_path)
 
     def close(self):
         if isinstance(self.filesdb, shelve.DbfilenameShelf):
@@ -76,13 +76,13 @@ class FilesDB(lazydb.LazyDB):
         if isinstance(self.filesdb, shelve.DbfilenameShelf):
             return
 
-        files_db = os.path.join(ctx.config.info_dir(), ctx.const.files_db)
+        files_db_path = os.path.join(ctx.config.info_dir(), ctx.const.files_db)
 
-        if not os.path.exists(files_db):
+        if not os.path.exists(files_db_path):
             flag = "n"
-        elif os.access(files_db, os.W_OK):
+        elif os.access(files_db_path, os.W_OK):
             flag = "w"
         else:
             flag = "r"
 
-        self.filesdb = shelve.open(files_db, flag)
+        self.filesdb = shelve.open(files_db_path, flag)

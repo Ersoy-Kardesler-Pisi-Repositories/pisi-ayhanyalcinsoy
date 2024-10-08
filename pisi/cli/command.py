@@ -16,10 +16,11 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.api
 import pisi.context as ctx
+
 
 class autocommand(type):
     def __init__(cls, name, bases, dict):
@@ -30,7 +31,7 @@ class autocommand(type):
             raise pisi.cli.Error(_('Command lacks name'))
         longname, shortname = name
         def add_cmd(cmd):
-            if Command.cmd_dict.has_key(cmd):
+            if cmd in Command.cmd_dict:  # has_key yerine in kullanılır
                 raise pisi.cli.Error(_('Duplicate command %s') % cmd)
             else:
                 Command.cmd_dict[cmd] = cls
@@ -38,11 +39,11 @@ class autocommand(type):
         if shortname:
             add_cmd(shortname)
 
+
 class Command(object):
     """generic help string for any command"""
 
     # class variables
-
     cmd = []
     cmd_dict = {}
 
@@ -54,7 +55,7 @@ class Command(object):
         for name in l:
             commandcls = Command.cmd_dict[name]
             trans = gettext.translation('pisi', fallback=True)
-            summary = trans.ugettext(commandcls.__doc__).split('\n')[0]
+            summary = trans.gettext(commandcls.__doc__).split('\n')[0]
             name = commandcls.name[0]
             if commandcls.name[1]:
                 name += ' (%s)' % commandcls.name[1]
@@ -63,8 +64,7 @@ class Command(object):
 
     @staticmethod
     def get_command(cmd, fail=False, args=None):
-
-        if Command.cmd_dict.has_key(cmd):
+        if cmd in Command.cmd_dict:  # has_key yerine in kullanılır
             return Command.cmd_dict[cmd](args)
 
         if fail:
@@ -72,9 +72,8 @@ class Command(object):
         else:
             return None
 
-    # instance variabes
-
-    def __init__(self, args = None):
+    # instance variables
+    def __init__(self, args=None):
         # now for the real parser
         import pisi
         self.comar = False
@@ -85,7 +84,7 @@ class Command(object):
         self.commonopts()
         (self.options, self.args) = self.parser.parse_args(args)
         if self.args:
-            self.args.pop(0)                # exclude command arg
+            self.args.pop(0)  # exclude command arg
 
         self.process_opts()
 
@@ -95,21 +94,21 @@ class Command(object):
 
         group = optparse.OptionGroup(self.parser, _("general options"))
 
-        group.add_option("-D", "--destdir", action="store", default = None,
-                     help = _("Change the system root for PiSi commands"))
+        group.add_option("-D", "--destdir", action="store", default=None,
+                         help=_("Change the system root for PiSi commands"))
         group.add_option("-y", "--yes-all", action="store_true",
-                     default=False, help = _("Assume yes in all yes/no queries"))
+                         default=False, help=_("Assume yes in all yes/no queries"))
         group.add_option("-u", "--username", action="store")
         group.add_option("-p", "--password", action="store")
-        group.add_option("-L", "--bandwidth-limit", action="store", default = 0,
-                     help = _("Keep bandwidth usage under specified KB's"))
+        group.add_option("-L", "--bandwidth-limit", action="store", default=0,
+                         help=_("Keep bandwidth usage under specified KB's"))
         group.add_option("-v", "--verbose", action="store_true",
-                     dest="verbose", default=False,
-                     help=_("Detailed output"))
+                         dest="verbose", default=False,
+                         help=_("Detailed output"))
         group.add_option("-d", "--debug", action="store_true",
-                     default=False, help=_("Show debugging information"))
+                         default=False, help=_("Show debugging information"))
         group.add_option("-N", "--no-color", action="store_true", default=False,
-                     help = _("Suppresses all coloring of PiSi's output"))
+                         help=_("Suppresses all coloring of PiSi's output"))
 
         p.add_option_group(group)
 
@@ -135,14 +134,6 @@ class Command(object):
         username = self.options.username
         password = self.options.password
 
-        # TODO: We'll get the username, password pair from a configuration
-        # file from users home directory. Currently we need user to
-        # give it from the user interface.
-        #         if not username and not password:
-        #             if someauthconfig.username and someauthconfig.password:
-        #                 self.authInfo = (someauthconfig.username,
-        #                                  someauthconfig.password)
-        #                 return
         if username and password:
             self.options.authinfo = (username, password)
             return
@@ -154,7 +145,7 @@ class Command(object):
         else:
             self.options.authinfo = None
 
-    def init(self, database = True, write = True):
+    def init(self, database=True, write=True):
         """initialize PiSi components"""
 
         if self.options:
@@ -162,8 +153,8 @@ class Command(object):
         else:
             ui = pisi.cli.CLI()
 
-        if (write and not os.access(pisi.context.config.packages_dir(), os.W_OK) or \
-            ('sf' in self.get_name() and not os.access(os.path.join(ctx.config.info_dir(), ctx.const.files_ldb), os.W_OK))):
+        if (write and not os.access(pisi.context.config.packages_dir(), os.W_OK) or
+                ('sf' in self.get_name() and not os.access(os.path.join(ctx.config.info_dir(), ctx.const.files_ldb), os.W_OK))):
             raise pisi.cli.Error(_("You have to be root for this operation."))
 
         pisi.api.set_userinterface(ui)
@@ -183,14 +174,14 @@ class Command(object):
     def help(self):
         """print help for the command"""
         trans = gettext.translation('pisi', fallback=True)
-        print "%s: %s\n" % (self.format_name(), trans.ugettext(self.__doc__))
-        print self.parser.format_option_help()
+        print("%s: %s\n" % (self.format_name(), trans.gettext(self.__doc__)))
+        print(self.parser.format_option_help())
 
     def die(self):
         """exit program"""
-        #FIXME: not called from anywhere?
         ctx.ui.error(_('Command terminated abnormally.'))
         sys.exit(-1)
+
 
 class PackageOp(Command):
     """Abstract package operation command"""
@@ -201,17 +192,18 @@ class PackageOp(Command):
 
     def options(self, group):
         group.add_option("--ignore-dependency", action="store_true",
-                     default=False,
-                     help=_("Do not take dependency information into account"))
+                         default=False,
+                         help=_("Do not take dependency information into account"))
         group.add_option("--ignore-comar", action="store_true",
-                     default=False, help=_("Bypass comar configuration agent"))
+                         default=False, help=_("Bypass comar configuration agent"))
         group.add_option("--ignore-safety", action="store_true",
-                     default=False, help=_("Bypass safety switch"))
+                         default=False, help=_("Bypass safety switch"))
         group.add_option("-n", "--dry-run", action="store_true", default=False,
-                     help = _("Do not perform any action, just show what would be done"))
+                         help=_("Do not perform any action, just show what would be done"))
 
     def init(self, database=True, write=True):
         super(PackageOp, self).init(database, write)
+
 
 class PisiHelpFormatter(optparse.HelpFormatter):
     def __init__(self,
@@ -260,7 +252,7 @@ class PisiHelpFormatter(optparse.HelpFormatter):
         if len(opts) > opt_width:
             opts = "%*s%s\n" % (self.current_indent, "", opts)
             indent_first = self.help_position
-        else:                       # start help on same line as opts
+        else:  # start help on same line as opts
             opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
             indent_first = 0
         result.append(opts)

@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -25,7 +25,7 @@ import pisi.db
 class ListAvailable(command.Command):
     __doc__ = _("""List available packages in the repositories
 
-Usage: list-available [ <repo1> <repo2> ... repon ]
+Usage: list-available [ <repo1> <repo2> ... <repon> ]
 
 Gives a brief list of PiSi packages published in the specified
 repositories. If no repository is specified, we list packages in
@@ -41,19 +41,17 @@ all repositories.
     name = ("list-available", "la")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("list-available options"))
         group.add_option("-l", "--long", action="store_true",
-                               default=False, help=_("Show in long format"))
+                         default=False, help=_("Show in long format"))
         group.add_option("-c", "--component", action="store",
-                               default=None, help=_("List available packages under given component"))
+                         default=None, help=_("List available packages under given component"))
         group.add_option("-U", "--uninstalled", action="store_true",
-                               default=False, help=_("Show uninstalled packages only"))
+                         default=False, help=_("Show uninstalled packages only"))
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         if not (ctx.get_option('no_color') or ctx.config.get_option('uninstalled')):
             ctx.ui.info(util.colorize(_('Installed packages are shown in this color'), 'green'))
@@ -68,12 +66,11 @@ all repositories.
                 self.print_packages(repo)
 
     def print_packages(self, repo):
-
         component = ctx.get_option('component')
         if component:
             try:
                 l = self.componentdb.get_packages(component, repo=repo, walk=True)
-            except Exception, e:
+            except Exception as e:  # Python 3'te 'as' ile hata yönetimi
                 return
         else:
             l = pisi.api.list_available(repo)
@@ -82,7 +79,7 @@ all repositories.
 
         # maxlen is defined dynamically from the longest package name (#9021)
         if l:
-            maxlen = max([len(_p) for _p in l])
+            maxlen = max(len(_p) for _p in l)
 
         l.sort()
         for p in l:
@@ -97,7 +94,7 @@ all repositories.
                 package.name = util.colorize(package.name, 'brightwhite')
 
             if self.options.long:
-                ctx.ui.info(unicode(package)+'\n')
+                ctx.ui.info(str(package) + '\n')  # Python 3'te unicode yerine str
             else:
                 package.name += ' ' * max(0, maxlen - len(p))
-                ctx.ui.info('%s - %s ' % (package.name, unicode(package.summary)))
+                ctx.ui.info('%s - %s ' % (package.name, str(package.summary)))  # Python 3'te unicode yerine str

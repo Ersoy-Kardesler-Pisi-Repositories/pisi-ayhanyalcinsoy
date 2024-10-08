@@ -12,7 +12,7 @@
 import os
 import gettext
 __trans = gettext.translation("pisi", fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.context as ctx
@@ -32,7 +32,6 @@ def __pkg_already_installed(name, pkginfo):
     return (ver, rel) == installdb.get_version(name)[:-1]
 
 def __listactions(actions):
-
     beinstalled = []
     beremoved = []
     configs = []
@@ -60,7 +59,7 @@ def __getpackageurl(package):
     try:
         reponame = packagedb.which_repo(pkg)
     except Exception:
-        # Maybe this package is obsoluted from repository
+        # Maybe this package is obsoleted from repository
         for repo in repodb.get_binary_repos():
             if pkg in packagedb.get_obsoletes(repo):
                 reponame = repo
@@ -71,7 +70,7 @@ def __getpackageurl(package):
     repourl = repodb.get_repo_url(reponame)
     ctx.ui.info(_("Package %s found in repository %s") % (pkg, reponame))
 
-    #return _possible_ url for this package
+    # return _possible_ url for this package
     return os.path.join(os.path.dirname(repourl),
                         pisi.util.parse_package_dir_path(package),
                         package)
@@ -89,7 +88,7 @@ def fetch_remote_file(package, errors):
     if not os.path.exists(filepath):
         try:
             pisi.fetcher.fetch_url(uri, dest, ctx.ui.Progress)
-        except pisi.fetcher.FetchError, e:
+        except pisi.fetcher.FetchError as e:  # Exception, not as e
             errors.append(package)
             ctx.ui.info(pisi.util.colorize(_("%s could not be found") % (package), "red"))
             return False
@@ -117,7 +116,7 @@ def get_takeback_actions(operation):
 
     for operation in historydb.get_till_operation(operation):
         if operation.type == "snapshot":
-            pass
+            continue
 
         for pkg in operation.packages:
             if pkg.operation in ["upgrade", "downgrade", "remove"]:
@@ -153,7 +152,7 @@ def takeback(operation):
     errors = []
     paths = []
     for pkg in beinstalled:
-        ctx.ui.info(pisi.util.colorize(_("Downloading %d / %d") % (beinstalled.index(pkg)+1, len(beinstalled)), "yellow"))
+        ctx.ui.info(pisi.util.colorize(_("Downloading %d / %d") % (beinstalled.index(pkg) + 1, len(beinstalled)), "yellow"))
         pkg += ctx.const.package_suffix
         if fetch_remote_file(pkg, errors):
             paths.append(os.path.join(ctx.config.cached_packages_dir(), pkg))

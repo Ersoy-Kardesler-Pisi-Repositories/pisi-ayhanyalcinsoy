@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.blacklist
@@ -41,15 +41,15 @@ Lists the packages that will be upgraded.
     def options(self):
         group = optparse.OptionGroup(self.parser, _("list-upgrades options"))
         group.add_option("-l", "--long", action="store_true",
-                               default=False, help=_("Show in long format"))
+                         default=False, help=_("Show in long format"))
         group.add_option("-c", "--component", action="store",
-                               default=None, help=_("List upgradable packages under given component"))
+                         default=None, help=_("List upgradable packages under given component"))
         group.add_option("-i", "--install-info", action="store_true",
-                               default=False, help=_("Show detailed install info"))
+                         default=False, help=_("Show detailed install info"))
         self.parser.add_option_group(group)
 
     def run(self):
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
         upgradable_pkgs = pisi.api.list_upgradable()
 
         component = ctx.get_option('component')
@@ -67,19 +67,19 @@ Lists the packages that will be upgraded.
         upgradable_pkgs.sort()
 
         # Resize the first column according to the longest package name
-        maxlen = max([len(_p) for _p in upgradable_pkgs])
+        maxlen = max(len(_p) for _p in upgradable_pkgs)
 
         if self.options.install_info:
             ctx.ui.info(_('Package Name          |St|        Version|  Rel.|  Distro|             Date'))
-            print         '==========================================================================='
+            print('========================================================================')  # Parantez içinde yazıldı
         for pkg in upgradable_pkgs:
             package = self.installdb.get_package(pkg)
             inst_info = self.installdb.get_info(pkg)
             if self.options.long:
-                ctx.ui.info(package)
-                print inst_info
+                ctx.ui.info(str(package))  # Python 3 için unicode yerine str kullanıldı
+                print(inst_info)  # Python 3 için parantez eklendi
             elif self.options.install_info:
                 ctx.ui.info('%-20s |%s ' % (package.name, inst_info.one_liner()))
             else:
-                package.name = package.name + ' ' * (maxlen - len(package.name))
-                ctx.ui.info('%s - %s' % (package.name, unicode(package.summary)))
+                package.name += ' ' * (maxlen - len(package.name))
+                ctx.ui.info('%s - %s' % (package.name, str(package.summary)))  # unicode yerine str

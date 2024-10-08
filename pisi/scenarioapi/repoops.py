@@ -1,5 +1,5 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2006, TUBITAK/UEKAE
 #
@@ -9,7 +9,6 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import os
 
@@ -24,7 +23,7 @@ _ = __trans.ugettext
 repodb = {}
 
 def repo_added_package(package, *args):
-    if repodb.has_key(package):
+    if package in repodb:
         raise Exception(_("Repo already has package named %s.") % package)
 
     version = "1.0"
@@ -48,14 +47,14 @@ def repo_added_package(package, *args):
     repodb[package] = Package(package, dependencies, conflicts, ver=version, partOf=partOf)
 
 def repo_removed_package(package):
-    if not repodb.has_key(package):
+    if package not in repodb:
         raise Exception(_("Repo does not have package named %s.") % package)
 
     os.unlink(os.path.join(consts.repo_path, repodb[package].get_file_name()))
     del repodb[package]
 
 def repo_version_bumped(package, *args):
-    if not repodb.has_key(package):
+    if package not in repodb:
         raise Exception(_("Repo does not have package named %s.") % package)
 
     old_file = repodb[package].get_file_name()

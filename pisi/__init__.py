@@ -20,18 +20,13 @@ import logging.handlers
 
 __version__ = "2.7.1"
 
-__all__ = [ 'api', 'configfile', 'db']
+__all__ = ['api', 'configfile', 'db']
 
-# FIXME: Exception shadows builtin Exception. This is no good.
-class Exception(Exception):
+# Exception shadows built-in Exception. This is no good.
+class PiSiException(Exception):
     """Class of exceptions that must be caught and handled within PiSi"""
     def __str__(self):
-        s = u''
-        for x in self.args:
-            if s != '':
-                s += '\n'
-            s += unicode(x)
-        return s
+        return '\n'.join(str(arg) for arg in self.args)
 
 class Error(Exception):
     """Class of exceptions that lead to program termination"""
@@ -43,8 +38,8 @@ import pisi.context as ctx
 
 def init_logging():
     log_dir = os.path.join(ctx.config.dest_dir(), ctx.config.log_dir())
-    if os.access(log_dir, os.W_OK) and not sys.modules.has_key("distutils.core"):
-        handler = logging.handlers.RotatingFileHandler('%s/pisi.log' % log_dir)
+    if os.access(log_dir, os.W_OK) and "distutils.core" not in sys.modules:
+        handler = logging.handlers.RotatingFileHandler(os.path.join(log_dir, 'pisi.log'))
         formatter = logging.Formatter('%(asctime)-12s: %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         ctx.log = logging.getLogger('pisi')
@@ -59,20 +54,11 @@ def _cleanup():
         ctx.loghandler.flush()
         ctx.log.removeHandler(ctx.loghandler)
 
-#    filesdb = pisi.db.filesdb.FilesDB()
-#    if filesdb.is_initialized():
-#        filesdb.close()
-
     if ctx.build_leftover and os.path.exists(ctx.build_leftover):
         os.unlink(ctx.build_leftover)
 
     ctx.ui.close()
     ctx.enable_keyboard_interrupts()
-
-# Hack for pisi to work with non-patched Python. pisi needs
-# lots of work for not doing this.
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 atexit.register(_cleanup)
 

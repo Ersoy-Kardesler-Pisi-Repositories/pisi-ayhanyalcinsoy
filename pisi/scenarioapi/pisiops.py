@@ -1,5 +1,5 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2006, TUBITAK/UEKAE
 #
@@ -9,7 +9,6 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import os
 import pisi.util as util
@@ -38,4 +37,3 @@ def pisi_installed(*args):
 
 def pisi_reinstalled(package):
     os.system("pisi -D%s install --reinstall %s" % (consts.pisi_db, package))
-

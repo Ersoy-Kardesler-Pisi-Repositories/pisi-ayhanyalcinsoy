@@ -22,7 +22,7 @@ import pisi.actionsapi
 
 class PkgconfigError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
@@ -30,20 +30,20 @@ def getVariableForLibrary(library, variable):
     # Returns a specific variable provided in the library .pc file
     try:
         proc = subprocess.Popen(["pkg-config",
-                                 "--variable=%s" % variable,
-                                 "%s" % library],
+                                 f"--variable={variable}",
+                                 library],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         return_code = proc.wait()
-    except OSError, exception:
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         if return_code == 0 and proc.stdout:
-            return proc.stdout.read().strip()
+            return proc.stdout.read().strip().decode('utf-8')
         else:
             # Command failed
-            raise PkgconfigError(proc.stderr.read().strip())
+            raise PkgconfigError(proc.stderr.read().strip().decode('utf-8'))
 
 def getLibraryVersion(library):
     """Returns the module version provided in the library .pc file."""
@@ -54,15 +54,15 @@ def getLibraryVersion(library):
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         return_code = proc.wait()
-    except OSError, exception:
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         if return_code == 0 and proc.stdout:
-            return proc.stdout.read().strip()
+            return proc.stdout.read().strip().decode('utf-8')
         else:
             # Command failed
-            raise PkgconfigError(proc.stderr.read().strip())
+            raise PkgconfigError(proc.stderr.read().strip().decode('utf-8'))
 
 def getLibraryCFLAGS(library):
     """Returns compiler flags for compiling with this library.
@@ -70,19 +70,19 @@ def getLibraryCFLAGS(library):
     try:
         proc = subprocess.Popen(["pkg-config",
                                  "--cflags",
-                                 "%s" % library],
+                                 library],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         return_code = proc.wait()
-    except OSError, exception:
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         if return_code == 0 and proc.stdout:
-            return proc.stdout.read().strip()
+            return proc.stdout.read().strip().decode('utf-8')
         else:
             # Command failed
-            raise PkgconfigError(proc.stderr.read().strip())
+            raise PkgconfigError(proc.stderr.read().strip().decode('utf-8'))
 
 def getLibraryLIBADD(library):
     """Returns linker flags for linking with this library.
@@ -90,19 +90,19 @@ def getLibraryLIBADD(library):
     try:
         proc = subprocess.Popen(["pkg-config",
                                  "--libs",
-                                 "%s" % library],
+                                 library],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         return_code = proc.wait()
-    except OSError, exception:
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         if return_code == 0 and proc.stdout:
-            return proc.stdout.read().strip()
+            return proc.stdout.read().strip().decode('utf-8')
         else:
             # Command failed
-            raise PkgconfigError(proc.stderr.read().strip())
+            raise PkgconfigError(proc.stderr.read().strip().decode('utf-8'))
 
 def runManualCommand(*args):
     """Runs the given command and returns the output."""
@@ -113,16 +113,15 @@ def runManualCommand(*args):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         return_code = proc.wait()
-    except OSError, exception:
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         if return_code == 0 and proc.stdout:
-            return proc.stdout.read().strip()
+            return proc.stdout.read().strip().decode('utf-8')
         else:
             # Command failed
-            raise PkgconfigError(proc.stderr.read().strip())
-
+            raise PkgconfigError(proc.stderr.read().strip().decode('utf-8'))
 
 def libraryExists(library):
     """Returns True if the library provides a .pc file."""
@@ -130,10 +129,9 @@ def libraryExists(library):
     try:
         result = subprocess.call(["pkg-config",
                                    "--exists",
-                                   "%s" % library])
-    except OSError, exception:
+                                   library])
+    except OSError as exception:
         if exception.errno == 2:
             raise PkgconfigError(_("pkg-config is not installed on your system."))
     else:
         return result == 0
-

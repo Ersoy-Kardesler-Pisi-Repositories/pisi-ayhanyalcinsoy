@@ -14,10 +14,11 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.api
 import pisi.cli.command as command
+
 
 class ConfigurePending(command.PackageOp):
     __doc__ = _("""Configure pending packages
@@ -28,7 +29,10 @@ of packages waiting to be configured. This command
 configures those packages.
 """)
 
-    __metaclass__ = command.autocommand
+    # Python 2'de __metaclass__ kullanılırdı, Python 3'te class başlığına doğrudan yazılır.
+    # Bu yüzden `autocommand` metaclass Python 3'e göre şu şekilde tanımlanır:
+    class Meta(command.autocommand):
+        pass
 
     def __init__(self, args):
         super(ConfigurePending, self).__init__(args)
@@ -41,6 +45,5 @@ configures those packages.
         self.parser.add_option_group(group)
 
     def run(self):
-
         self.init()
         pisi.api.configure_pending(self.args)

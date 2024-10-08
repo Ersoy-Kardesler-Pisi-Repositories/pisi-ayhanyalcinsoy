@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -24,11 +24,11 @@ import pisi.db
 class Upgrade(command.PackageOp):
     __doc__ = _("""Upgrade PiSi packages
 
-Usage: Upgrade [<package1> <package2> ... <packagen>]
+Usage: upgrade [<package1> <package2> ... <packagen>]
 
 <packagei>: package name
 
-Upgrades the entire system if no package names are given
+Upgrades the entire system if no package names are given.
 
 You may use only package names to specify packages because
 the package upgrade operation is defined only with respect
@@ -42,7 +42,7 @@ expanded to package names.
     __metaclass__ = command.autocommand
 
     def __init__(self, args):
-        super(Upgrade, self).__init__(args)
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("upgrade", "up")
 
@@ -51,33 +51,32 @@ expanded to package names.
 
         super(Upgrade, self).options(group)
         group.add_option("--security-only", action="store_true",
-                     default=False, help=_("Security related package upgrades only"))
+                         default=False, help=_("Security related package upgrades only"))
         group.add_option("-b", "--bypass-update-repo", action="store_true",
-                     default=False, help=_("Do not update repositories"))
+                         default=False, help=_("Do not update repositories"))
         group.add_option("--ignore-file-conflicts", action="store_true",
-                     default=False, help=_("Ignore file conflicts"))
+                         default=False, help=_("Ignore file conflicts"))
         group.add_option("--ignore-package-conflicts", action="store_true",
-                     default=False, help=_("Ignore package conflicts"))
+                         default=False, help=_("Ignore package conflicts"))
         group.add_option("-c", "--component", action="append",
-                               default=None, help=_("Upgrade component's and recursive components' packages"))
+                         default=None, help=_("Upgrade component's and recursive components' packages"))
         group.add_option("-r", "--repository", action="store",
-                               type="string", default=None, help=_('Name of the to be upgraded packages\' repository'))
+                         type="string", default=None, help=_('Name of the to be upgraded packages\' repository'))
         group.add_option("-f", "--fetch-only", action="store_true",
-                     default=False, help=_("Fetch upgrades but do not install."))
+                         default=False, help=_("Fetch upgrades but do not install."))
         group.add_option("-x", "--exclude", action="append",
-                     default=None, help=_("When upgrading system, ignore packages and components whose basenames match pattern."))
+                         default=None, help=_("When upgrading system, ignore packages and components whose basenames match pattern."))
         group.add_option("--exclude-from", action="store",
-                     default=None,
-                     help=_("When upgrading system, ignore packages "
-                            "and components whose basenames match "
-                            "any pattern contained in file."))
+                         default=None,
+                         help=_("When upgrading system, ignore packages "
+                                "and components whose basenames match "
+                                "any pattern contained in file."))
         group.add_option("-s", "--compare-sha1sum", action="store_true",
-                     default=False, help=_("compare sha1sum repo and installed packages"))
+                         default=False, help=_("Compare sha1sum repo and installed packages"))
 
         self.parser.add_option_group(group)
 
     def run(self):
-
         if self.options.fetch_only:
             self.init(database=True, write=False)
         else:
@@ -93,6 +92,7 @@ expanded to package names.
         repository = ctx.get_option('repository')
         components = ctx.get_option('component')
         packages = []
+        
         if components:
             componentdb = pisi.db.componentdb.ComponentDB()
             for name in components:
@@ -101,6 +101,7 @@ expanded to package names.
                         packages.extend(componentdb.get_packages(name, walk=True, repo=repository))
                     else:
                         packages.extend(componentdb.get_union_packages(name, walk=True))
+        
         packages.extend(self.args)
 
         pisi.api.upgrade(packages, repository)

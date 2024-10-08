@@ -15,7 +15,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -33,7 +33,7 @@ Downloads the given pisi packages to working directory
 """)
     __metaclass__ = command.autocommand
 
-    def __init__(self,args):
+    def __init__(self, args):
         super(Fetch, self).__init__(args)
 
     name = ("fetch", "fc")
@@ -47,11 +47,11 @@ Downloads the given pisi packages to working directory
         group.add_option("-o", "--output-dir", action="store", default=os.path.curdir,
                                help=_("Output directory for the fetched packages"))
         group.add_option("--runtime-deps", action="store_true", default=None,
-                               help=_("Bağımlılıkları ile indirme açıklaması."))
+                               help=_("Download with runtime dependencies."))  # Açıklamayı İngilizceye çevirdim.
 
     def run(self):
         packages = pisi.db.packagedb.PackageDB()
-        self.init(database = False, write = False)
+        self.init(database=False, write=False)
 
         if not self.args:
             self.help()

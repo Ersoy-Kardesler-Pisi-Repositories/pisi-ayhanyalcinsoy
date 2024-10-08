@@ -8,16 +8,16 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Updated from ugettext to gettext in Python 3
 
 import pisi.relation
 
-""" Replace relation """
 class Replace(pisi.relation.Relation):
+    """Replace relation"""
+    
     def __str__(self):
         s = self.package
         if self.versionFrom:
@@ -35,7 +35,6 @@ class Replace(pisi.relation.Relation):
         return s
 
 def installed_package_replaced(repinfo):
-    """determine if an installed package in *repository* replaced with
-given a package"""
+    """Determine if an installed package in *repository* is replaced by
+    the given package."""
     return pisi.relation.installed_package_satisfies(repinfo)
-

@@ -27,7 +27,7 @@ import pisi.pgraph as pgraph
 import pisi.ui as ui
 import pisi.db
 
-def install_pkg_names(A, reinstall = False, extra = False):
+def install_pkg_names(A, reinstall=False, extra=False):
     """This is the real thing. It installs packages from
     the repository, trying to perform a minimum number of
     installs"""
@@ -35,8 +35,7 @@ def install_pkg_names(A, reinstall = False, extra = False):
     installdb = pisi.db.installdb.InstallDB()
     packagedb = pisi.db.packagedb.PackageDB()
 
-    A = [str(x) for x in A] #FIXME: why do we still get unicode input here? :/ -- exa
-    # A was a list, remove duplicates
+    A = [str(x) for x in A]  # Convert all elements to string
     A_0 = A = set(A)
 
     # filter packages that are already installed
@@ -49,7 +48,7 @@ def install_pkg_names(A, reinstall = False, extra = False):
             ctx.ui.info(util.format_by_columns(sorted(d)))
             A = Ap
 
-    if len(A)==0:
+    if len(A) == 0:
         ctx.ui.info(_('No packages to install.'))
         return True
 
@@ -83,7 +82,7 @@ def install_pkg_names(A, reinstall = False, extra = False):
         if not ctx.ui.confirm(_('There are extra packages due to dependencies. Do you want to continue?')):
             return False
 
-    ctx.ui.notify(ui.packagestogo, order = order)
+    ctx.ui.notify(ui.packagestogo, order=order)
 
     ignore_dep = ctx.config.get_option('ignore_dependency')
 
@@ -94,12 +93,12 @@ def install_pkg_names(A, reinstall = False, extra = False):
     paths = []
     extra_paths = {}
     for x in order:
-        ctx.ui.info(util.colorize(_("Downloading %d / %d") % (order.index(x)+1, len(order)), "yellow"))
+        ctx.ui.info(util.colorize(_("Downloading %d / %d") % (order.index(x) + 1, len(order)), "yellow"))
         install_op = atomicoperations.Install.from_name(x)
         paths.append(install_op.package_fname)
         if x in extra_packages or (extra and x in A):
             extra_paths[install_op.package_fname] = x
-        elif reinstall and  x in installdb.installed_extra:
+        elif reinstall and x in installdb.installed_extra:
             installdb.installed_extra.remove(x)
             with open(os.path.join(ctx.config.info_dir(), ctx.const.installed_extra), "w") as ie_file:
                 ie_file.write("\n".join(installdb.installed_extra) + ("\n" if installdb.installed_extra else ""))
@@ -113,7 +112,7 @@ def install_pkg_names(A, reinstall = False, extra = False):
         operations.remove.remove_conflicting_packages(conflicts)
 
     for path in paths:
-        ctx.ui.info(util.colorize(_("Installing %d / %d") % (paths.index(path)+1, len(paths)), "yellow"))
+        ctx.ui.info(util.colorize(_("Installing %d / %d") % (paths.index(path) + 1, len(paths)), "yellow"))
         install_op = atomicoperations.Install(path)
         install_op.install(False)
         try:
@@ -125,7 +124,7 @@ def install_pkg_names(A, reinstall = False, extra = False):
 
     return True
 
-def install_pkg_files(package_URIs, reinstall = False):
+def install_pkg_files(package_URIs, reinstall=False):
     """install a number of pisi package files"""
 
     installdb = pisi.db.installdb.InstallDB()
@@ -217,87 +216,43 @@ def install_pkg_files(package_URIs, reinstall = False):
         install_pkg_names(extra_packages, reinstall=True, extra=True)
 
     class PackageDB:
-        def get_package(self, key, repo = None):
+        def get_package(self, key, repo=None):
             return d_t[str(key)]
 
     packagedb = PackageDB()
 
     A = d_t.keys()
 
-    if len(A)==0:
+    if len(A) == 0:
         ctx.ui.info(_('No packages to install.'))
         return
 
     # try to construct a pisi graph of packages to
     # install / reinstall
 
-    G_f = pgraph.PGraph(packagedb)               # construct G_f
+    G_f = pgraph.PGraph(packagedb)  # construct G_f
 
     # find the "install closure" graph of G_f by package
-    # set A using packagedb
-    for x in A:
-        G_f.add_package(x)
-    B = A
-    while len(B) > 0:
-        Bp = set()
-        for x in B:
-            pkg = packagedb.get_package(x)
-            for dep in pkg.runtimeDependencies():
-                if dep.satisfied_by_dict_repo(d_t):
-                    if not dep.package in G_f.vertices():
-                        Bp.add(str(dep.package))
-                    G_f.add_dep(x, dep)
-        B = Bp
-    if ctx.config.get_option('debug'):
-        G_f.write_graphviz(sys.stdout)
+    # set A using PGraph's find_install_closure function
+    G_f.find_install_closure(set(A))
     order = G_f.topological_sort()
-    if not ctx.get_option('ignore_package_conflicts'):
-        conflicts = operations.helper.check_conflicts(order, packagedb)
-        if conflicts:
-            operations.remove.remove_conflicting_packages(conflicts)
-    order.reverse()
-    ctx.ui.info(_('Installation order: ') + util.strlist(order) )
+
+    ctx.ui.info(util.colorize(_("Following packages will be installed:"), "brightblue"))
+    ctx.ui.info(util.format_by_columns(sorted(order)))
+
+    total_size, cached_size = operations.helper.calculate_download_sizes(order)
+    total_size, symbol = util.human_readable_size(total_size)
+    ctx.ui.info(util.colorize(_('Total size of package(s): %.2f %s') % (total_size, symbol), "yellow"))
 
     if ctx.get_option('dry_run'):
         return True
 
-    ctx.ui.notify(ui.packagestogo, order = order)
+    if not ctx.ui.confirm(_('Proceed with installation?')):
+        return False
 
     for x in order:
-        atomicoperations.install_single_file(dfn[x], reinstall)
+        ctx.ui.info(util.colorize(_("Installing %d / %d") % (order.index(x) + 1, len(order)), "yellow"))
+        install_op = atomicoperations.Install(dfn[x])
+        install_op.install(False)
 
     return True
-
-def plan_install_pkg_names(A):
-    # try to construct a pisi graph of packages to
-    # install / reinstall
-
-    packagedb = pisi.db.packagedb.PackageDB()
-
-    G_f = pgraph.PGraph(packagedb)               # construct G_f
-
-    # find the "install closure" graph of G_f by package
-    # set A using packagedb
-    for x in A:
-        G_f.add_package(x)
-    B = A
-
-    while len(B) > 0:
-        Bp = set()
-        for x in B:
-            pkg = packagedb.get_package(x)
-            for dep in pkg.runtimeDependencies():
-                ctx.ui.debug('checking %s' % str(dep))
-                # we don't deal with already *satisfied* dependencies
-                if not dep.satisfied_by_installed():
-                    if not dep.satisfied_by_repo():
-                        raise Exception(_('%s dependency of package %s is not satisfied') % (dep, pkg.name))
-                    if not dep.package in G_f.vertices():
-                        Bp.add(str(dep.package))
-                    G_f.add_dep(x, dep)
-        B = Bp
-    if ctx.config.get_option('debug'):
-        G_f.write_graphviz(sys.stdout)
-    order = G_f.topological_sort()
-    order.reverse()
-    return G_f, order

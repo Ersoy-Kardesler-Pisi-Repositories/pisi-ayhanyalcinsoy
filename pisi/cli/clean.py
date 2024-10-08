@@ -12,7 +12,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 
@@ -24,8 +24,6 @@ Usage: clean
 PiSi uses filesystem locks for managing database access.
 This command deletes unused locks from the database directory.""")
 
-    __metaclass__ = command.autocommand
-
     def __init__(self, args=None):
         super(Clean, self).__init__(args)
 
@@ -33,4 +31,3 @@ This command deletes unused locks from the database directory.""")
 
     def run(self):
         self.init()
-        

@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # ugettext yerine gettext
 
 import pisi.api
 import pisi.cli.command as command
@@ -41,7 +41,6 @@ If no packages are given, checks all installed packages.
 class Check(command.Command):
 
     __doc__ = usage
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(Check, self).__init__(args)

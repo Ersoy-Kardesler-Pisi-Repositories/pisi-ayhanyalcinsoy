@@ -14,7 +14,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.context as ctx
@@ -30,7 +30,7 @@ Finds the installed package which contains the specified file.
     __metaclass__ = command.autocommand
 
     def __init__(self, args):
-        super(SearchFile, self).__init__(args)
+        super().__init__(args)  # Python 3'te super() kullanımı
 
     name = ("search-file", "sf")
 
@@ -52,14 +52,13 @@ Finds the installed package which contains the specified file.
             ctx.ui.error(_("Path '%s' does not belong to an installed package") % path)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         if not self.args:
             self.help()
             return
 
-        # search among existing files
+        # Search among existing files
         for path in self.args:
             if not ctx.config.options.quiet:
                 ctx.ui.info(_('Searching for %s') % path)

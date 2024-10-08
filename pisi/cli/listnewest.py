@@ -11,10 +11,10 @@
 #
 
 import optparse
-
 import gettext
+
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 import pisi.context as ctx
@@ -40,17 +40,15 @@ packages from all repositories.
     name = ("list-newest", "ln")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("list-newest options"))
         group.add_option("-s", "--since", action="store",
-                               default=None, help=_("List new packages added to repository after this given date formatted as yyyy-mm-dd"))
+                         default=None, help=_("List new packages added to repository after this given date formatted as yyyy-mm-dd"))
         group.add_option("-l", "--last", action="store",
-                               default=None, help=_("List new packages added to repository after last nth previous repository update"))
+                         default=None, help=_("List new packages added to repository after last nth previous repository update"))
         self.parser.add_option_group(group)
 
     def run(self):
-
-        self.init(database = True, write = False)
+        self.init(database=True, write=False)
 
         if self.args:
             for arg in self.args:
@@ -78,14 +76,13 @@ packages from all repositories.
             ctx.ui.info(_("Packages added to %s:") % (repo))
 
         # maxlen is defined dynamically from the longest package name (#9021)
-        maxlen = max([len(_p) for _p in l])
+        maxlen = max(len(p) for p in l)  # Python 3'te liste içindeki öğelerin uzunluklarını al
 
         l.sort()
         for p in l:
             package = self.packagedb.get_package(p, repo)
             lenp = len(p)
             p = p + ' ' * max(0, maxlen - lenp)
-            ctx.ui.info('%s - %s ' % (p, unicode(package.summary)))
+            ctx.ui.info('%s - %s ' % (p, str(package.summary)))  # Python 3'te unicode yerine str
 
-        print
-
+        print()  # Boş bir satır yazdırma, Python 3'te print parantezle kullanılır

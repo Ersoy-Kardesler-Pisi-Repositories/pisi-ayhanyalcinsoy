@@ -8,13 +8,12 @@
 # any later version.
 #
 # Please read the COPYING file.
-#
 
 import signal
 
 exception = {
-    signal.SIGINT:KeyboardInterrupt
-    }
+    signal.SIGINT: KeyboardInterrupt
+}
 
 class Signal:
     def __init__(self, sig):
@@ -23,7 +22,6 @@ class Signal:
         self.pending = False
 
 class SignalHandler:
-
     def __init__(self):
         self.signals = {}
 
@@ -32,16 +30,13 @@ class SignalHandler:
         self.signals[sig].pending = True
 
     def disable_signal(self, sig):
-        if sig not in self.signals.keys():
+        if sig not in self.signals:
             self.signals[sig] = Signal(sig)
             signal.signal(sig, self.signal_handler)
 
     def enable_signal(self, sig):
-        if sig in self.signals.keys():
-            if self.signals[sig].oldhandler:
-                oldhandler = self.signals[sig].oldhandler
-            else:
-                oldhandler = signal.SIG_DFL
+        if sig in self.signals:
+            oldhandler = self.signals[sig].oldhandler if self.signals[sig].oldhandler else signal.SIG_DFL
             pending = self.signals[sig].pending
             del self.signals[sig]
             signal.signal(sig, oldhandler)
@@ -49,7 +44,7 @@ class SignalHandler:
                 raise exception[sig]
 
     def signal_disabled(self, sig):
-        return sig in self.signals.keys()
+        return sig in self.signals
 
     def signal_pending(self, sig):
         return self.signal_disabled(sig) and self.signals[sig].pending

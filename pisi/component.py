@@ -13,13 +13,11 @@
 import pisi.pxml.xmlfile as xmlfile
 import pisi.pxml.autoxml as autoxml
 
-class Error(object):
-
-    __metaclass__ = autoxml.autoxml
+class Error:
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
 class Obsolete:
-
-    __metaclass__ = autoxml.autoxml
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
     s_Package = [autoxml.String, autoxml.mandatory]
 
@@ -27,40 +25,38 @@ class Obsolete:
         return self.package
 
 class Distribution(xmlfile.XmlFile):
-
-    __metaclass__ = autoxml.autoxml
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
     tag = "PISI"
 
-    t_SourceName = [autoxml.Text, autoxml.mandatory] # name of distribution (source)
+    t_SourceName = [autoxml.Text, autoxml.mandatory]  # name of distribution (source)
     t_Description = [autoxml.LocalText, autoxml.mandatory]
     t_Version = [autoxml.Text, autoxml.optional]
-    t_Type =  [autoxml.Text, autoxml.mandatory]
-    t_Dependencies = [ [autoxml.Text], autoxml.optional, "Dependencies/Distribution"]
+    t_Type = [autoxml.Text, autoxml.mandatory]
+    t_Dependencies = [[autoxml.Text], autoxml.optional, "Dependencies/Distribution"]
 
-    t_BinaryName = [autoxml.Text, autoxml.optional] # name of repository (binary distro)
-    t_Architecture = [autoxml.Text, autoxml.optional] # architecture identifier
+    t_BinaryName = [autoxml.Text, autoxml.optional]  # name of repository (binary distro)
+    t_Architecture = [autoxml.Text, autoxml.optional]  # architecture identifier
 
-    t_Obsoletes = [ [Obsolete], autoxml.optional, "Obsoletes/Package"]
+    t_Obsoletes = [[Obsolete], autoxml.optional, "Obsoletes/Package"]
 
 class Maintainer(xmlfile.XmlFile):
-    "representation for component responsibles"
+    """representation for component responsibles"""
 
-    __metaclass__ = autoxml.autoxml
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
     t_Name = [autoxml.Text, autoxml.mandatory]
     t_Email = [autoxml.String, autoxml.mandatory]
 
     def __str__(self):
-        s = "%s <%s>" % (self.name, self.email)
-        return s
+        return f"{self.name} <{self.email}>"  # f-string ile güncellendi
 
 class Component(xmlfile.XmlFile):
-    "representation for component declarations"
+    """representation for component declarations"""
 
-    __metaclass__ = autoxml.autoxml
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
-    t_Name = [autoxml.String, autoxml.mandatory]     # fully qualified name
+    t_Name = [autoxml.String, autoxml.mandatory]  # fully qualified name
 
     # component name in other languages, for instance in Turkish
     # LocalName for system.base could be sistem.taban or "Taban Sistem",
@@ -78,22 +74,21 @@ class Component(xmlfile.XmlFile):
 
     # the parts of this component.
     # to be filled by the component database, thus it is optional.
-    t_Packages = [ [autoxml.String], autoxml.optional, "Parts/Package"]
+    t_Packages = [[autoxml.String], autoxml.optional, "Parts/Package"]
 
-    t_Sources = [ [autoxml.String], autoxml.optional, "Parts/Source"]
+    t_Sources = [[autoxml.String], autoxml.optional, "Parts/Source"]
 
 class Components(xmlfile.XmlFile):
-    "representation for component declarations"
+    """representation for component declarations"""
 
-    __metaclass__ = autoxml.autoxml
+    __metaclass__ = autoxml.autoxml  # Python 3'te __metaclass__ kullanımı değişti
 
     tag = "PISI"
 
-    t_Components = [ [Component], autoxml.optional, "Components/Component" ]
+    t_Components = [[Component], autoxml.optional, "Components/Component"]
 
 # FIXME: there will be no component.xml only components.xml
 class CompatComponent(Component):
-
     tag = "PISI"
 
     t_VisibleTo = [autoxml.String, autoxml.optional]

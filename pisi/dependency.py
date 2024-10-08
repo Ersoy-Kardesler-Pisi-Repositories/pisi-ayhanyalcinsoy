@@ -10,7 +10,7 @@
 # Please read the COPYING file.
 #
 
-"""dependency analyzer"""
+"""Dependency analyzer"""
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
@@ -40,7 +40,7 @@ class Dependency(pisi.relation.Relation):
         return self.package
 
     def satisfied_by_dict_repo(self, dict_repo):
-        if not dict_repo.has_key(self.package):
+        if self.package not in dict_repo:
             return False
         else:
             pkg = dict_repo[self.package]

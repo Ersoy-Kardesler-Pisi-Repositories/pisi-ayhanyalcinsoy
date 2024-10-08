@@ -14,7 +14,7 @@ import sys
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te `ugettext` yerine `gettext` kullanılıyor
 
 import pisi
 import pisi.operations
@@ -25,17 +25,16 @@ import pisi.ui as ui
 import pisi.db
 
 def emerge(A):
-
     # A was a list, remove duplicates and expand components
     A = [str(x) for x in A]
     A_0 = A = pisi.operations.helper.expand_src_components(set(A))
     ctx.ui.debug('A = %s' % str(A))
 
-    if len(A)==0:
+    if len(A) == 0:
         ctx.ui.info(_('No packages to emerge.'))
         return
 
-    #A |= upgrade_base(A)
+    # A |= upgrade_base(A)
 
     # FIXME: Errr... order_build changes type conditionally and this
     # is not good. - baris
@@ -61,16 +60,16 @@ installed in the respective order to satisfy dependencies:
         if not ctx.ui.confirm(_('There are extra packages due to dependencies. Do you want to continue?')):
             return False
 
-    ctx.ui.notify(ui.packagestogo, order = order_inst)
+    ctx.ui.notify(ui.packagestogo, order=order_inst)
 
     for x in order_inst:
         atomicoperations.install_single_name(x)
 
-    #ctx.ui.notify(ui.packagestogo, order = order_build)
+    # ctx.ui.notify(ui.packagestogo, order=order_build)
 
     for x in order_build:
         package_names = atomicoperations.build(x).new_packages
-        pisi.operations.install.install_pkg_files(package_names, reinstall=True) # handle inter-package deps here
+        pisi.operations.install.install_pkg_files(package_names, reinstall=True)  # handle inter-package deps here
         # reset counts between builds
         ctx.ui.errors = ctx.ui.warnings = 0
 
@@ -80,7 +79,6 @@ installed in the respective order to satisfy dependencies:
     U.update(order_inst)
 
 def plan_emerge(A):
-
     sourcedb = pisi.db.sourcedb.SourceDB()
     
     # try to construct a pisi graph of packages to
@@ -93,17 +91,20 @@ def plan_emerge(A):
             return sourcedb.get_spec(name)
         else:
             raise Exception(_('Cannot find source package: %s') % name)
+
     def get_src(name):
         return get_spec(name).source
+
     def add_src(src):
-        if not str(src.name) in G_f.vertices():
+        if str(src.name) not in G_f.vertices():
             G_f.add_vertex(str(src.name), (src.version, src.release))
+
     def pkgtosrc(pkg):
         return sourcedb.pkgtosrc(pkg)
 
     # setup first
-    #specfiles = [ sourcedb.get_source(x)[1] for x in A ]
-    #pkgtosrc = {}
+    # specfiles = [ sourcedb.get_source(x)[1] for x in A ]
+    # pkgtosrc = {}
     B = A
 
     install_list = set()
@@ -123,10 +124,10 @@ def plan_emerge(A):
                         install_list.add(dep.package)
                         return
                     srcdep = pkgtosrc(dep.package)
-                    if not srcdep in G_f.vertices():
+                    if srcdep not in G_f.vertices():
                         Bp.add(srcdep)
                         add_src(get_src(srcdep))
-                    if not src.name == srcdep: # firefox - firefox-devel thing
+                    if src.name != srcdep:  # firefox - firefox-devel thing
                         G_f.add_edge(src.name, srcdep)
 
             for builddep in src.buildDependencies:

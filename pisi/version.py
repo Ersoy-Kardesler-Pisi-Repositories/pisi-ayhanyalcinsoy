@@ -14,7 +14,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 import pisi
 
@@ -23,13 +23,13 @@ import pisi
 # m: milestone. this was added for OO.o
 # p: patch-level
 __keywords = (
-        ("alpha",   -5),
-        ("beta",    -4),
-        ("pre",     -3),
-        ("rc",      -2),
-        ("m",       -1),
-        ("p",        1),
-        )
+    ("alpha", -5),
+    ("beta", -4),
+    ("pre", -3),
+    ("rc", -2),
+    ("m", -1),
+    ("p", 1),
+)
 
 class InvalidVersionError(pisi.Error):
     pass
@@ -48,23 +48,22 @@ def make_version(version):
             if "a" <= suffix <= "s":
                 for keyword, value in __keywords:
                     if suffix.startswith(keyword):
-                        return map(__make_version_item, ver.split(".")), value, \
-                                map(__make_version_item, suffix[len(keyword):].split("."))
+                        return list(map(__make_version_item, ver.split("."))), value, \
+                               list(map(__make_version_item, suffix[len(keyword):].split(".")))
                 else:
                     # Probably an invalid version string. Reset ver string
                     # to raise an exception in __make_version_item function.
                     ver = ""
             else:
-                return map(__make_version_item, ver.split(".")), 0, \
-                        map(__make_version_item, suffix.split("."))
+                return list(map(__make_version_item, ver.split("."))), 0, \
+                       list(map(__make_version_item, suffix.split(".")))
 
-        return map(__make_version_item, ver.split(".")), 0, [(0, None)]
+        return list(map(__make_version_item, ver.split("."))), 0, [(0, None)]
 
     except ValueError:
         raise InvalidVersionError(_("Invalid version string: '%s'") % version)
 
-class Version(object):
-
+class Version:
     __slots__ = ("__version", "__version_string")
 
     @staticmethod
@@ -83,37 +82,37 @@ class Version(object):
         return self.__version_string
 
     def compare(self, ver):
-        if isinstance(ver, basestring):
-            return cmp(self.__version, make_version(ver))
+        if isinstance(ver, str):
+            return (self.__version > make_version(ver)) - (self.__version < make_version(ver))
 
-        return cmp(self.__version, ver.__version)
+        return (self.__version > ver.__version) - (self.__version < ver.__version)
 
     def __lt__(self, rhs):
-        if isinstance(rhs, basestring):
+        if isinstance(rhs, str):
             return self.__version < make_version(rhs)
 
         return self.__version < rhs.__version
 
     def __le__(self, rhs):
-        if isinstance(rhs, basestring):
+        if isinstance(rhs, str):
             return self.__version <= make_version(rhs)
 
         return self.__version <= rhs.__version
 
     def __gt__(self, rhs):
-        if isinstance(rhs, basestring):
+        if isinstance(rhs, str):
             return self.__version > make_version(rhs)
 
         return self.__version > rhs.__version
 
     def __ge__(self, rhs):
-        if isinstance(rhs, basestring):
+        if isinstance(rhs, str):
             return self.__version >= make_version(rhs)
 
         return self.__version >= rhs.__version
 
     def __eq__(self, rhs):
-        if isinstance(rhs, basestring):
+        if isinstance(rhs, str):
             return self.__version_string == rhs
 
         return self.__version_string == rhs.__version_string

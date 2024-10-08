@@ -12,7 +12,7 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli
 import pisi.cli.command as command
@@ -27,7 +27,7 @@ If run without parameters, it prints the general help.""")
 
     __metaclass__ = command.autocommand
 
-    def __init__(self, args = None):
+    def __init__(self, args=None):
         super(Help, self).__init__(args)
 
     name = ("help", "?")
@@ -39,7 +39,7 @@ If run without parameters, it prints the general help.""")
             pisi.cli.printu(self.parser.format_help())
             return
 
-        self.init(database = False, write = False)
+        self.init(database=False, write=False)
 
         for arg in self.args:
             obj = command.Command.get_command(arg, True)

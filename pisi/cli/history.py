@@ -16,7 +16,7 @@ import optparse
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi
 import pisi.api
@@ -25,7 +25,15 @@ import pisi.context as ctx
 import pisi.cli.command as command
 
 # Operation names for translation
-opttrans = {"upgrade":_("upgrade"),"remove":_("remove"),"emerge":_("emerge"), "install":_("install"), "snapshot":_("snapshot"), "takeback":_("takeback"), "repoupdate":_("repository update")}
+opttrans = {
+    "upgrade": _("upgrade"),
+    "remove": _("remove"),
+    "emerge": _("emerge"),
+    "install": _("install"),
+    "snapshot": _("snapshot"),
+    "takeback": _("takeback"),
+    "repoupdate": _("repository update")
+}
 
 class History(command.PackageOp):
     __doc__ = _("""History of pisi operations
@@ -43,7 +51,6 @@ Lists previous operations.""")
     name = ("history", "hs")
 
     def options(self):
-
         group = optparse.OptionGroup(self.parser, _("history options"))
         self.add_options(group)
         self.parser.add_option_group(group)
@@ -64,19 +71,19 @@ Lists previous operations.""")
 
     def print_history(self):
         for operation in self.historydb.get_last(ctx.get_option('last')):
-            print _("Operation #%d: %s") % (operation.no, opttrans[operation.type])
-            print _("Date: %s %s") % (operation.date, operation.time)
-            print
+            print(_("Operation #%d: %s") % (operation.no, opttrans[operation.type]))
+            print(_("Date: %s %s") % (operation.date, operation.time))
+            print()
 
             if operation.type == "snapshot":
-                print _("    * There are %d packages in this snapshot.") % len(operation.packages)
+                print(_("    * There are %d packages in this snapshot.") % len(operation.packages))
             elif operation.type == "repoupdate":
                 for repo in operation.repos:
-                    print "    *",  repo
+                    print("    *", repo)
             else:
                 for pkg in operation.packages:
-                    print "    *",  pkg
-            print
+                    print("    *", pkg)
+            print()
 
     def redirect_output(self, func):
         if os.isatty(sys.stdout.fileno()):
@@ -87,7 +94,7 @@ Lists previous operations.""")
                 def __init__(self):
                     import subprocess
                     self.less = subprocess.Popen(["less", "-K", "-"],
-                                            stdin=subprocess.PIPE)
+                                                  stdin=subprocess.PIPE)
 
                 def __del__(self):
                     self.less.stdin.close()
@@ -98,7 +105,7 @@ Lists previous operations.""")
 
                 def write(self, s):
                     try:
-                        self.less.stdin.write(s)
+                        self.less.stdin.write(s.encode('utf-8'))  # Python 3 için kodlama
                     except IOError:
                         raise LessException
 
@@ -110,12 +117,11 @@ Lists previous operations.""")
                 pass
             finally:
                 sys.stdout, sys.stderr = stdout, stderr
-
         else:
             func()
 
     def run(self):
-        self.init(database = False, write = False)
+        self.init(database=False, write=False)
         if ctx.get_option('snapshot'):
             self.take_snapshot()
             return

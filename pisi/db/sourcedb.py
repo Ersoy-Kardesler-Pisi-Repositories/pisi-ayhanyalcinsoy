@@ -22,7 +22,7 @@ import pisi.db.lazydb as lazydb
 class SourceDB(lazydb.LazyDB):
 
     def __init__(self):
-        lazydb.LazyDB.__init__(self, cacheable=True)
+        super().__init__(cacheable=True)
 
     def init(self):
         self.__source_nodes = {}
@@ -46,7 +46,7 @@ class SourceDB(lazydb.LazyDB):
 
         for spec in doc.tags("SpecFile"):
             src_name = spec.getTag("Source").getTagData("Name")
-            sources[src_name] = gzip.zlib.compress(spec.toString())
+            sources[src_name] = gzip.compress(spec.toString().encode('utf-8'))
             for package in spec.tags("Package"):
                 pkgstosrc[package.getTagData("Name")] = src_name
 
@@ -97,19 +97,19 @@ class SourceDB(lazydb.LazyDB):
             lang = pisi.pxml.autoxml.LocalText.get_lang()
         found = []
         for name, xml in self.sdb.get_items_iter(repo):
-            if terms == filter(lambda term: (fields['name'] and \
-                    re.compile(term, re.I).search(name)) or \
-                    (fields['summary'] and \
-                    re.compile(resum % (lang, term), 0 if cs else re.I).search(xml)) or \
-                    (fields['desc'] and \
-                    re.compile(redesc % (lang, term), 0 if cs else re.I).search(xml)), terms):
+            if terms == [term for term in terms if (fields['name'] and
+                    re.compile(term, re.I).search(name)) or
+                    (fields['summary'] and
+                    re.compile(resum % (lang, term), 0 if cs else re.I).search(xml)) or
+                    (fields['desc'] and
+                    re.compile(redesc % (lang, term), 0 if cs else re.I).search(xml)]:
                 found.append(name)
         return found
 
     def get_spec_repo(self, name, repo=None):
         src, repo = self.sdb.get_item_repo(name, repo)
         spec = pisi.specfile.SpecFile()
-        spec.parse(src)
+        spec.parse(src.decode('utf-8'))
         return spec, repo
 
     def pkgtosrc(self, name, repo=None):
@@ -118,7 +118,7 @@ class SourceDB(lazydb.LazyDB):
     def get_rev_deps(self, name, repo=None):
         try:
             rvdb = self.rvdb.get_item(name, repo)
-        except Exception: #FIXME: what exception could we catch here, replace with that.
+        except Exception as e:  # Catch the specific exception you expect
             return []
 
         rev_deps = []

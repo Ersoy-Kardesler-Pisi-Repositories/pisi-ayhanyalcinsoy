@@ -9,7 +9,6 @@
 #
 # Please read the COPYING file.
 
-
 # Pisi Modules
 import pisi.context as ctx
 
@@ -24,20 +23,20 @@ from pisi.actionsapi.shelltools import system
 
 class MakeError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
 class InstallError(pisi.actionsapi.Error):
     def __init__(self, value=''):
-        pisi.actionsapi.Error.__init__(self, value)
+        super().__init__(value)
         self.value = value
         ctx.ui.error(value)
 
-def make(parameters = ''):
+def make(parameters=''):
     if system('scons %s %s' % (get.makeJOBS(), parameters)):
         raise MakeError(_('Make failed.'))
 
-def install(parameters = 'install', prefix = get.installDIR(), argument='prefix'):
+def install(parameters='install', prefix=get.installDIR(), argument='prefix'):
     if system('scons %s=%s %s' % (argument, prefix, parameters)):
         raise InstallError(_('Install failed.'))
