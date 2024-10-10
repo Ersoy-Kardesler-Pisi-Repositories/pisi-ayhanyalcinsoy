@@ -12,12 +12,14 @@
 import os
 import fcntl
 import re
-import fetcher
+#import fetcher
+
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.gettext
 
+import pisi.fetcher
 import pisi
 import pisi.context as ctx
 import pisi.uri
