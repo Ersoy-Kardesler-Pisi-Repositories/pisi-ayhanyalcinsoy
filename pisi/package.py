@@ -22,7 +22,7 @@ import pisi.metadata
 import pisi.file
 import pisi.files
 import pisi.util as util
-import fetcher
+import pisi.fetcher
 
 __trans = gettext.translation('pisi', fallback=True)
 _ = __trans.gettext

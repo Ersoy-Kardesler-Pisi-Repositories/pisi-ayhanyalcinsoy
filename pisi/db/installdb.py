@@ -17,7 +17,7 @@ import os
 import re
 import gettext
 import time
-import piksemel
+import xml.etree.ElementTree as ET
 import pisi
 import pisi.context as ctx
 import pisi.dependency
@@ -26,7 +26,7 @@ import pisi.util
 import pisi.db.lazydb as lazydb
 
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 
 class InstallDBError(pisi.Error):
@@ -88,8 +88,9 @@ class InstallDB(lazydb.LazyDB):
     def __add_to_revdeps(self, package, revdeps):
         metadata_xml = os.path.join(self.package_path(package), ctx.const.metadata_xml)
         try:
-            meta_doc = piksemel.parse(metadata_xml)
-            pkg = meta_doc.getTag("Package")
+            tree = ET.parse(metadata_xml)
+            root = tree.getroot()
+            pkg = root.find("Package")
         except Exception:
             pkg = None
 
@@ -100,15 +101,19 @@ class InstallDB(lazydb.LazyDB):
             del self.installed_db[package]
             return
 
-        deps = pkg.getTag('RuntimeDependencies')
-        if deps:
-            for dep in deps.tags("Dependency"):
-                revdep = revdeps.setdefault(dep.firstChild().data(), {})
-                revdep[package] = dep.toString()
-            for anydep in deps.tags("AnyDependency"):
-                for dep in anydep.tags("Dependency"):
-                    revdep = revdeps.setdefault(dep.firstChild().data(), {})
-                    revdep[package] = anydep.toString()
+        deps = pkg.find('RuntimeDependencies')
+        if deps is not None:
+            for dep in deps.findall("Dependency"):
+                dep_name = dep.text
+                dep_xml = ET.tostring(dep, encoding='utf-8')
+                revdep = revdeps.setdefault(dep_name, {})
+                revdep[package] = dep_xml
+            for anydep in deps.findall("AnyDependency"):
+                for dep in anydep.findall("Dependency"):
+                    dep_name = dep.text
+                    dep_xml = ET.tostring(anydep, encoding='utf-8')
+                    revdep = revdeps.setdefault(dep_name, {})
+                    revdep[package] = dep_xml
 
     def __generate_revdeps(self):
         revdeps = {}
@@ -141,33 +146,38 @@ class InstallDB(lazydb.LazyDB):
         return found
 
     def __get_version(self, meta_doc):
-        history = meta_doc.getTag("Package").getTag("History")
-        version = history.getTag("Update").getTagData("Version")
-        release = history.getTag("Update").getAttribute("release")
+        pkg = meta_doc.find("Package")
+        history = pkg.find("History")
+        version = history.find("Update").findtext("Version")
+        release = history.find("Update").get("release")
         return version, release, None
 
     def __get_distro_release(self, meta_doc):
-        distro = meta_doc.getTag("Package").getTagData("Distribution")
-        release = meta_doc.getTag("Package").getTagData("DistributionRelease")
+        pkg = meta_doc.find("Package")
+        distro = pkg.findtext("Distribution")
+        release = pkg.findtext("DistributionRelease")
         return distro, release
 
     def __get_install_tar_hash(self, meta_doc):
-        return meta_doc.getTag("Package").getTagData("InstallTarHash")
+        return meta_doc.find("Package").findtext("InstallTarHash")
 
     def get_install_tar_hash(self, package):
         metadata_xml = os.path.join(self.package_path(package), ctx.const.metadata_xml)
-        meta_doc = piksemel.parse(metadata_xml)
-        return self.__get_install_tar_hash(meta_doc)
+        tree = ET.parse(metadata_xml)
+        root = tree.getroot()
+        return self.__get_install_tar_hash(root)
 
     def get_version_and_distro_release(self, package):
         metadata_xml = os.path.join(self.package_path(package), ctx.const.metadata_xml)
-        meta_doc = piksemel.parse(metadata_xml)
-        return self.__get_version(meta_doc) + self.__get_distro_release(meta_doc)
+        tree = ET.parse(metadata_xml)
+        root = tree.getroot()
+        return self.__get_version(root) + self.__get_distro_release(root)
 
     def get_version(self, package):
         metadata_xml = os.path.join(self.package_path(package), ctx.const.metadata_xml)
-        meta_doc = piksemel.parse(metadata_xml)
-        return self.__get_version(meta_doc)
+        tree = ET.parse(metadata_xml)
+        root = tree.getroot()
+        return self.__get_version(root)
 
     def get_files(self, package):
         files = pisi.files.Files()
@@ -180,31 +190,28 @@ class InstallDB(lazydb.LazyDB):
         return [file for file in files.list if file.type == 'config']
 
     def search_package(self, terms, lang=None, fields=None, cs=False):
-        """
-        fields (dict) : looks for terms in the fields which are marked as True
-        If the fields is equal to None this method will search in all fields
-
-        example :
-        if fields is equal to : {'name': True, 'summary': True, 'desc': False}
-        This method will return only package that contains terms in the package
-        name or summary
-        """
         resum = r'<Summary xml:lang=.(%s|en).>.*?%s.*?</Summary>'
         redesc = r'<Description xml:lang=.(%s|en).>.*?%s.*?</Description>'
         if fields is None:
             fields = {'name': True, 'summary': True, 'desc': True}
         if lang is None:
-            lang = pisi.pxml.autoxml.LocalText.get_lang()
+            # Use a simple fallback for language detection
+            import locale
+            try:
+                lang = locale.getlocale()[0][:2] if locale.getlocale()[0] else 'en'
+            except:
+                lang = 'en'
         found = []
         for name in self.list_installed():
             xml_path = os.path.join(self.package_path(name), ctx.const.metadata_xml)
             with open(xml_path) as xml_file:
                 xml = xml_file.read()
-                if terms == [term for term in terms if (
-                    (fields['name'] and re.compile(term, re.I).search(name)) or
-                    (fields['summary'] and re.compile(resum % (lang, term), 0 if cs else re.I).search(xml)) or
-                    (fields['desc'] and re.compile(redesc % (lang, term), 0 if cs else re.I).search(xml))
-                )]:
+                if terms == [term for term in terms if (fields['name'] and
+                        re.compile(term, re.I).search(name)) or
+                        (fields['summary'] and
+                        re.compile(resum % (lang, term), 0 if cs else re.I).search(xml)) or
+                        (fields['desc'] and
+                        re.compile(redesc % (lang, term), 0 if cs else re.I).search(xml))]:
                     found.append(name)
         return found
 
@@ -230,12 +237,12 @@ class InstallDB(lazydb.LazyDB):
         return InstallInfo(state, pkg.version, pkg.release, pkg.distribution, ctime)
 
     def __make_dependency(self, depStr):
-        node = piksemel.parseString(depStr)
+        node = ET.fromstring(depStr)
         dependency = pisi.dependency.Dependency()
-        dependency.package = node.firstChild().data()
-        if node.attributes():
-            attr = node.attributes()[0]
-            dependency.__dict__[attr] = node.getAttribute(attr)
+        dependency.package = node.text
+        if node.attrib:
+            for attr, value in node.attrib.items():
+                dependency.__dict__[attr] = value
         return dependency
 
     def __create_dependency(self, depStr):

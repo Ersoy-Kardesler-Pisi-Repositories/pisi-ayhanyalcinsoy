@@ -16,7 +16,7 @@ _ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 
 import pisi.cli.command as command
 
-class Clean(command.Command):
+class Clean(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Clean stale locks
 
 Usage: clean

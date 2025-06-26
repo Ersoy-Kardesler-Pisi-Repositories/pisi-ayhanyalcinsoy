@@ -38,7 +38,7 @@ If no packages are given, checks all installed packages.
 """)
 
 
-class Check(command.Command):
+class Check(command.Command, metaclass=command.autocommand):
 
     __doc__ = usage
 

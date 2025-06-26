@@ -19,8 +19,9 @@ _ = __trans.gettext  # ugettext yerine gettext
 import pisi.api
 import pisi.cli.command as command
 import pisi.context as ctx
+import pisi.db
 
-class AddRepo(command.Command):
+class AddRepo(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Add a repository
 
 Usage: add-repo <repo> <indexuri>
@@ -31,9 +32,6 @@ Usage: add-repo <repo> <indexuri>
 NB: We support only local files (e.g., /a/b/c) and http:// URIs at the moment
 """)
     
-    # Python 3'te metaclass tanımı bu şekilde yapılır
-    __metaclass__ = type
-
     def __init__(self, args):
         super(AddRepo, self).__init__(args)
         self.repodb = pisi.db.repodb.RepoDB()

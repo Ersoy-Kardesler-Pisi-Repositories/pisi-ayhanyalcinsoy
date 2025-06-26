@@ -30,24 +30,24 @@ import pisi.util
 import pisi.fetcher
 import pisi.context as ctx
 
-class AlreadyHaveException(pisi.Exception):
+class AlreadyHaveException(Exception):
     def __init__(self, url, localfile):
-        pisi.Exception.__init__(self, _("URL %s already downloaded as %s")
+        Exception.__init__(self, _("URL %s already downloaded as %s")
                                       % (url, localfile))
         self.url = url
         self.localfile = localfile
 
-class NoSignatureFound(pisi.Exception):
+class NoSignatureFound(Exception):
     def __init__(self, url):
-        pisi.Exception.__init__(self, _("No signature found for %s") % url)
+        Exception.__init__(self, _("No signature found for %s") % url)
         self.url = url
 
-class Error(pisi.Error):
+class Error(Exception):
     pass
 
-class InvalidSignature(pisi.Error):
+class InvalidSignature(Error):
     def __init__(self, url):
-        pisi.Exception.__init__(self, _(" invalid for %s") % url)
+        Exception.__init__(self, _(" invalid for %s") % url)
         self.url = url
 
 class File:

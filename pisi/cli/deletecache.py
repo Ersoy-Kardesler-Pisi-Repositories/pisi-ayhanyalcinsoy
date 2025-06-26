@@ -19,7 +19,7 @@ import pisi.api
 import pisi.cli.command as command
 
 
-class DeleteCache(command.Command):
+class DeleteCache(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Delete cache files
 
 Usage: delete-cache

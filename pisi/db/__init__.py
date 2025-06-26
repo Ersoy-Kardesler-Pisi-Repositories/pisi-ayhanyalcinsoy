@@ -10,7 +10,7 @@
 # Please read the COPYING file.
 #
 
-from pisi import packagedb, sourcedb, componentdb, installdb, historydb, groupdb, repodb
+from pisi.db import packagedb, sourcedb, componentdb, installdb, historydb, groupdb, repodb
 
 def invalidate_caches():
     """Invalidates pisi caches in use and forces to re-fill caches from disk when needed."""

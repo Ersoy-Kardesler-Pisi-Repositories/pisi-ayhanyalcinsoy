@@ -14,6 +14,7 @@
 during the build process of a package and used in installation.'''
 
 import pisi.pxml.autoxml as autoxml
+import pisi.pxml.xmlfile as xmlfile
 
 class FileInfo(autoxml.autoxml):
     """File holds the information for a File node/tag in files.xml"""
@@ -33,7 +34,7 @@ class FileInfo(autoxml.autoxml):
         return s
 
 
-class Files(autoxml.XmlFile):
+class Files(xmlfile.XmlFile):
     tag = "Files"
 
     t_List = [[FileInfo], autoxml.optional, "File"]

@@ -22,7 +22,7 @@ import pisi.util as util
 import pisi.api
 import pisi.db
 
-class ListAvailable(command.Command):
+class ListAvailable(command.Command, metaclass=command.autocommand):
     __doc__ = _("""List available packages in the repositories
 
 Usage: list-available [ <repo1> <repo2> ... <repon> ]
@@ -31,7 +31,6 @@ Gives a brief list of PiSi packages published in the specified
 repositories. If no repository is specified, we list packages in
 all repositories.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListAvailable, self).__init__(args)

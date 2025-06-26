@@ -19,18 +19,24 @@ as in KDE API.
 Function names are mixedCase for compatibility with minidom,
 an 'old library'.
 
-This implementation uses piksemel.
+This implementation uses xml.etree.ElementTree.
 """
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 import pisi
-import piksemel as iks
+import xml.etree.ElementTree as ET
 
-parse = iks.parse
-newDocument = iks.newDocument
+def parse(file_path):
+    """Parse XML file and return root element."""
+    tree = ET.parse(file_path)
+    return tree.getroot()
+
+def newDocument(root_tag):
+    """Create a new XML document with given root tag."""
+    return ET.Element(root_tag)
 
 def getAllNodes(node, tagPath):
     """Retrieve all nodes that match a given tag path."""
@@ -49,18 +55,18 @@ def getAllNodes(node, tagPath):
 
 def getNodeAttribute(node, attrname):
     """Get named attribute from DOM node."""
-    return node.getAttribute(attrname)
+    return node.get(attrname)
 
 def setNodeAttribute(node, attrname, value):
     """Set named attribute for DOM node."""
-    return node.setAttribute(attrname, value)
+    return node.set(attrname, value)
 
 def getChildElts(parent):
     """Get only child elements."""
-    return [x for x in parent.tags()]
+    return list(parent)
 
 def getTagByName(parent, childName):
-    return [x for x in parent.tags(childName)]
+    return parent.findall(childName)
 
 def getNodeText(node, tagpath=""):
     """Get the first child and expect it to be text!"""
@@ -68,14 +74,7 @@ def getNodeText(node, tagpath=""):
         node = getNode(node, tagpath)
         if not node:
             return None
-    child = node.firstChild()
-    if not child:
-        return None
-    if child.type() == iks.DATA:
-        # In any case, strip whitespaces...
-        return child.data().strip()
-    else:
-        raise XmlError(_("getNodeText: Expected text node, got something else!"))
+    return node.text.strip() if node.text else None
 
 def getChildText(node_s, tagpath):
     """Get the text of a child at the end of a tag path."""
@@ -96,8 +95,8 @@ def getNode(node, tagpath):
     # Iterative code to search for the path
     for tag in tags:
         currentNode = None
-        for child in node.tags():
-            if child.name() == tag:
+        for child in node:
+            if child.tag == tag:
                 currentNode = child
                 break
         if not currentNode:
@@ -111,14 +110,14 @@ def createTagPath(node, tags):
     if len(tags) == 0:
         return node
     for tag in tags:
-        node = node.insertTag(tag)
+        node = ET.SubElement(node, tag)
     return node
 
 def addTagPath(node, tags, newnode=None):
     """Add newnode at the end of a tag chain, smart one."""
     node = createTagPath(node, tags)
     if newnode:  # Node to add specified
-        node.insertNode(newnode)
+        node.append(newnode)
     return node
 
 def addNode(node, tagpath, newnode=None, branch=True):
@@ -154,7 +153,7 @@ def addNode(node, tagpath, newnode=None, branch=True):
 
 def addText(node, tagpath, text):
     node = addNode(node, tagpath)
-    node.insertData(text)
+    node.text = text
 
 def newNode(node, tag):
-    return iks.newDocument(tag)
+    return ET.Element(tag)

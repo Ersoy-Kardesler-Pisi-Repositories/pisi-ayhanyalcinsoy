@@ -34,7 +34,7 @@ to be downloaded from a repository containing sources.
 """)
 
 
-class Build(command.Command):
+class Build(command.Command, metaclass=command.autocommand):
 
     __doc__ = usage
 

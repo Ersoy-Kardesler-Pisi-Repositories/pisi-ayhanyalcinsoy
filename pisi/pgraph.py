@@ -12,7 +12,7 @@
 
 """PiSi package relation graph that represents the state of packagedb"""
 
-import graph
+import pisi.graph as graph
 
 # Cache the results from packagedb queries in a graph
 

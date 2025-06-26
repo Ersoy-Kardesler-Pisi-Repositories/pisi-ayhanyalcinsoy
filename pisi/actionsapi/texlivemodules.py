@@ -18,7 +18,7 @@ import gettext
 from pathlib import Path
 
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 # Pisi Modules
 import pisi.context as ctx
@@ -229,7 +229,7 @@ from pathlib import Path
 import gettext
 
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 def add_language_def(parameter):
     '''Create language.*.def files'''

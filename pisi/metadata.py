@@ -19,7 +19,7 @@ a package index.
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 import pisi.specfile as specfile
 import pisi.pxml.xmlfile as xmlfile
@@ -49,7 +49,7 @@ class Package(specfile.Package, xmlfile.XmlFile, metaclass=autoxml.autoxml):
     t_PackageHash = [autoxml.String, autoxml.optional, "SHA1Sum"]
     t_InstallTarHash = [autoxml.String, autoxml.optional, "SHA1Sum"]
     t_PackageURI = [autoxml.String, autoxml.optional]
-    t_DeltaPackages = [[Delta], autoxml.optional]
+    t_DeltaPackages = [[Delta], autoxml.optional, "Delta"]
     t_PackageFormat = [autoxml.String, autoxml.optional]
 
     t_Source = [Source, autoxml.optional]

@@ -44,7 +44,7 @@ class Index(xmlfile.XmlFile):
     tag = "PISI"
 
     t_Distribution = [ component.Distribution, autoxml.optional ]
-    t_Specs = [ [specfile.SpecFile], autoxml.optional, "SpecFile"]
+    t_Specs = [ [specfile.Specfile], autoxml.optional, "SpecFile"]
     t_Packages = [ [metadata.Package], autoxml.optional, "Package"]
     #t_Metadatas = [ [metadata.MetaData], autoxml.optional, "MetaData"]
     t_Components = [ [component.Component], autoxml.optional, "Component"]

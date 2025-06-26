@@ -19,14 +19,13 @@ import pisi.context as ctx
 import pisi.util as util
 import pisi.db
 
-class ListRepo(command.Command):
+class ListRepo(command.Command, metaclass=command.autocommand):
     __doc__ = _("""List repositories
 
 Usage: list-repo
 
 Lists currently tracked repositories.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListRepo, self).__init__(args)

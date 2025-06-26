@@ -20,13 +20,11 @@ import pisi.cli.command as command
 import pisi.context as ctx
 import pisi.db
 
-class ListInstalled(command.Command):
+class ListInstalled(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Print the list of all installed packages
 
 Usage: list-installed
 """)
-
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListInstalled, self).__init__(args)

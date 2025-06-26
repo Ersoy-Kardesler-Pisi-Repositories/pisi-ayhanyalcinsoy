@@ -35,14 +35,12 @@ opttrans = {
     "repoupdate": _("repository update")
 }
 
-class History(command.PackageOp):
+class History(command.PackageOp, metaclass=command.autocommand):
     __doc__ = _("""History of pisi operations
 
 Usage: history
 
 Lists previous operations.""")
-
-    __metaclass__ = command.autocommand
 
     def __init__(self, args=None):
         super(History, self).__init__(args)

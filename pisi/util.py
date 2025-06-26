@@ -22,7 +22,6 @@ import string
 import struct
 import fnmatch
 import hashlib
-import statvfs
 import termios
 import operator
 import subprocess

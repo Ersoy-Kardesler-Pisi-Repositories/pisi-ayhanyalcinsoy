@@ -26,7 +26,7 @@ class Error(pisi.Error):
     pass
 
 
-class Exception(pisi.Exception):
+class Exception(pisi.Error):
     pass
 
 

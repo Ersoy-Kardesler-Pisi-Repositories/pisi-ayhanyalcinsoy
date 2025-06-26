@@ -23,14 +23,13 @@ import pisi.api
 import pisi.db
 
 
-class Info(command.Command):
+class Info(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Display package information
 
 Usage: info <package1> <package2> ... <packagen>
 
 <packagei> is either a package name or a .pisi file,
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(Info, self).__init__(args)

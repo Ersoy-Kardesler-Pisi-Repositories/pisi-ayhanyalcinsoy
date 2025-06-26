@@ -20,15 +20,15 @@ import pisi.cli.command as command
 import pisi.context as ctx
 import pisi.util as util
 import pisi.db
+import pisi.blacklist
 
-class ListOrphaned(command.Command):
+class ListOrphaned(command.Command, metaclass=command.autocommand):
     __doc__ = _("""List orphaned packages
 
 Usage: list-orphaned
 
 Lists packages installed as dependency, but no longer needed by any other installed package.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListOrphaned, self).__init__(args)

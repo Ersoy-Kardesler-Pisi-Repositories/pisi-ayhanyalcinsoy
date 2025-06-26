@@ -22,7 +22,7 @@ _ = __trans.gettext
 
 # standard python modules
 import os.path
-import piksemel
+import xml.etree.ElementTree as ET
 
 # pisi modules
 import pisi.pxml.xmlfile as xmlfile
@@ -116,7 +116,7 @@ class Update:
     t_Comment = [autoxml.String, autoxml.optional]
     t_Name = [autoxml.Text, autoxml.optional]
     t_Email = [autoxml.String, autoxml.optional]
-    t_Requires = [[Action], autoxml.optional]
+    t_Requires = [[Action], autoxml.optional, "Action"]
 
     def __str__(self):
         s = self.date
@@ -171,17 +171,17 @@ class Source:
     t_Name = [autoxml.String, autoxml.mandatory]
     t_Homepage = [autoxml.String, autoxml.optional]
     t_Packager = [Packager, autoxml.mandatory]
-    t_ExcludeArch = [[autoxml.String], autoxml.optional]
-    t_License = [[autoxml.String], autoxml.mandatory]
-    t_IsA = [[autoxml.String], autoxml.optional]
+    t_ExcludeArch = [[autoxml.String], autoxml.optional, "ExcludeArch"]
+    t_License = [[autoxml.String], autoxml.mandatory, "License"]
+    t_IsA = [[autoxml.String], autoxml.optional, "IsA"]
     t_PartOf = [autoxml.String, autoxml.optional]
     t_Summary = [autoxml.LocalText, autoxml.mandatory]
     t_Description = [autoxml.LocalText, autoxml.mandatory]
     t_Icon = [autoxml.String, autoxml.optional]
     t_Archive = [[Archive], autoxml.mandatory, "Archive"]
-    t_AdditionalFiles = [[AdditionalFile], autoxml.optional]
-    t_BuildDependencies = [[pisi.dependency.Dependency], autoxml.optional]
-    t_Patches = [[Patch], autoxml.optional]
+    t_AdditionalFiles = [[AdditionalFile], autoxml.optional, "AdditionalFile"]
+    t_BuildDependencies = [[pisi.dependency.Dependency], autoxml.optional, "Dependency"]
+    t_Patches = [[Patch], autoxml.optional, "Patch"]
     t_Version = [autoxml.String, autoxml.optional]
     t_Release = [autoxml.String, autoxml.optional]
     t_SourceURI = [autoxml.String, autoxml.optional]  # used in index
@@ -230,18 +230,18 @@ class Package:
     t_Name = [autoxml.String, autoxml.mandatory]
     t_Summary = [autoxml.LocalText, autoxml.optional]
     t_Description = [autoxml.LocalText, autoxml.optional]
-    t_IsA = [[autoxml.String], autoxml.optional]
+    t_IsA = [[autoxml.String], autoxml.optional, "IsA"]
     t_PartOf = [autoxml.String, autoxml.optional]
-    t_License = [[autoxml.String], autoxml.optional]
+    t_License = [[autoxml.String], autoxml.optional, "License"]
     t_Icon = [autoxml.String, autoxml.optional]
     t_BuildFlags = [[autoxml.String], autoxml.optional, "BuildFlags/Flag"]
     t_BuildType = [autoxml.String, autoxml.optional]
-    t_BuildDependencies = [[pisi.dependency.Dependency], autoxml.optional]
-    t_AdditionalFiles = [[AdditionalFile], autoxml.optional]
-    t_Provides = [[pisi.replace.Replacement], autoxml.optional]
-    t_Conflicts = [[pisi.conflict.Conflict], autoxml.optional]
-    t_Requires = [[AnyDependency], autoxml.optional]
-    t_Sources = [[Source], autoxml.optional]
+    t_BuildDependencies = [[pisi.dependency.Dependency], autoxml.optional, "Dependency"]
+    t_AdditionalFiles = [[AdditionalFile], autoxml.optional, "AdditionalFile"]
+    t_Provides = [[pisi.replace.Replace], autoxml.optional, "Replace"]
+    t_Conflicts = [[pisi.conflict.Conflict], autoxml.optional, "Conflict"]
+    t_Requires = [[AnyDependency], autoxml.optional, "AnyDependency"]
+    t_Sources = [[Source], autoxml.optional, "Source"]
 
     def buildtimeDependencies(self):
         return self.buildDependencies
@@ -261,14 +261,14 @@ class Package:
     def __str__(self):
         return f"{self.name}"
 
-class Specfile(xmlfile.XMLFile):
+class Specfile(xmlfile.XmlFile):
 
     t_Name = [autoxml.String, autoxml.mandatory]
     t_Version = [autoxml.String, autoxml.mandatory]
     t_Release = [autoxml.String, autoxml.mandatory]
-    t_Sources = [[Source], autoxml.optional]
-    t_Packages = [[Package], autoxml.optional]
-    t_Updates = [[Update], autoxml.optional]
+    t_Sources = [[Source], autoxml.optional, "Source"]
+    t_Packages = [[Package], autoxml.optional, "Package"]
+    t_Updates = [[Update], autoxml.optional, "Update"]
 
     def __init__(self, **kwargs):
         self.__super.__init__(**kwargs)

@@ -22,14 +22,13 @@ import pisi.context as ctx
 import pisi.api
 import pisi.db
 
-class ListUpgrades(command.Command):
+class ListUpgrades(command.Command, metaclass=command.autocommand):
     __doc__ = _("""List packages to be upgraded
 
 Usage: list-upgrades
 
 Lists the packages that will be upgraded.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListUpgrades, self).__init__(args)

@@ -16,7 +16,7 @@ import pisi.context as ctx
 class Error(pisi.Error):
     pass
 
-class Exception(pisi.Exception):
+class Exception(pisi.Error):
     pass
 
 def error(msg):

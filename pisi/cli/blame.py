@@ -20,7 +20,7 @@ import pisi.cli.command as command
 import pisi.context as ctx
 import pisi.db
 
-class Blame(command.Command):
+class Blame(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Information about the package owner and release
 
 Usage: blame <package> ... <package>

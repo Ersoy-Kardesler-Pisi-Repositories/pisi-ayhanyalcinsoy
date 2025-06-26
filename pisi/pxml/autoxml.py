@@ -444,23 +444,37 @@ class autoxml(type):
 
         return (attr, init, decode, encode, errors, format)
 
-    @staticmethod
-    def gen_tag_member(cls, tag):
-        spec = getattr(cls, 't_' + tag)
+    @classmethod
+    def gen_tag(cls, tag, spec):
+        """Generate tag member based on specification type"""
         tag_type = spec[0]
-        assert isinstance(tag_type, type)
+        
+        # Handle list types
+        if isinstance(tag_type, list):
+            return cls.gen_list_tag(tag, spec)
+        
+        # Handle class types (autoxml classes)
+        elif isinstance(tag_type, autoxml):
+            return cls.gen_class_tag(tag, spec)
+        
+        # Handle basic types
+        elif isinstance(tag_type, type):
+            return cls.gen_basic_tag(tag, spec)
+        
+        else:
+            raise Error(f"Unsupported tag type: {tag_type}")
 
-        def readtext(node, tag):
-            return xmlext.getSubNodeText(node, tag)
-
-        def writetext(node, tag, text):
-            return xmlext.setSubNodeText(node, tag, text)
-
+    @classmethod
+    def gen_basic_tag(cls, tag, spec):
+        """Generate a basic type tag (String, Integer, Long, etc.)"""
+        tag_type = spec[0]
+        req = spec[1]
+        
         def init(self):
             setattr(self, tag, None)
 
-        def decode(self, node, errs, where=str(cls.tag)):
-            value = readtext(node, tag)
+        def decode(self, node, errs, where=""):
+            value = xmlext.getNodeText(node, tag)
             if value is not None:
                 try:
                     setattr(self, tag, tag_type(value))
@@ -470,9 +484,9 @@ class autoxml(type):
         def encode(self, node, errs):
             value = getattr(self, tag)
             if value is not None:
-                writetext(node, tag, str(value))
+                xmlext.addText(node, tag, str(value))
 
-        def errors(self, where=str(cls.tag)):
+        def errors(self, where=""):
             errs = []
             value = getattr(self, tag)
             if mandatory in spec and value is None:
@@ -499,13 +513,13 @@ class autoxml(type):
             setattr(self, tag, None)
 
         def decode(self, node, errs, where=str(cls.tag)):
-            text = xmlext.getSubNodeText(node, tag)
+            text = xmlext.getNodeText(node, tag)
             setattr(self, tag, text)
 
         def encode(self, node, errs):
             text = getattr(self, tag)
             if text is not None:
-                xmlext.setSubNodeText(node, tag, text)
+                xmlext.addText(node, tag, text)
 
         def errors(self, where=str(cls.tag)):
             errs = []
@@ -521,96 +535,10 @@ class autoxml(type):
 
         return (tag, init, decode, encode, errors, format)
 
-    @classmethod
-    def mixed_case(cls, identifier):
-        """helper function to turn token name into mixed case"""
-        if identifier == "":
-            return ""
-        else:
-            if identifier[0] == 'I':
-                lowly = 'i'   # because of locale considerations in lowercasing
-            else:
-                lowly = identifier[0].lower()
-            return lowly + identifier[1:]
-
-    @classmethod
-    def tagpath_head_last(cls, tagpath):
-        "returns split of the tag path into last tag and the rest"
-        try:
-            lastsep = tagpath.rindex('/')
-        except ValueError as e:
-            return ('', tagpath)
-        return (tagpath[:lastsep], tagpath[lastsep+1:])
-
-    @classmethod
-    def parse_spec(cls, token, spec):
-        """decompose member specification"""
-        name = cls.mixed_case(token)
-        token_type = spec[0]
-        req = spec[1]
-
-        if len(spec) >= 3:
-            path = spec[2]  # an alternative path specified
-        elif isinstance(token_type, list):
-            if isinstance(token_type[0], autoxml):
-                # if list of class, by default nested like in most PSPEC
-                path = token + '/' + token_type[0].tag
-            else:
-                # if list of ordinary type, just take the name
-                path = token
-        elif isinstance(token_type, autoxml):
-            # if a class, by default its tag
-            path = token_type.tag
-        else:
-            path = token  # otherwise it's the same name as the token
-
-        return name, token_type, req, path
-
-    @classmethod
-    def gen_anon_basic(cls, token, spec, readtext, writetext):
-        """Generate a tag or attribute with one of the basic types like integer."""
-        name, token_type, req, tagpath = cls.parse_spec(token, spec)
-
-        def initialize():
-            """default value for all basic types is None"""
-            return None
-
-        def decode(node, errs, where):
-            """decode from DOM node, the value, watching the spec"""
-            text = readtext(node, token)
-            if text:
-                try:
-                    value = autoxml.basic_cons_map[token_type](text)
-                except KeyboardInterrupt:
-                    raise
-                except Exception as e:
-                    value = None
-                    errs.append(f"{where}: Type mismatch: read text cannot be decoded")
-                return value
-            else:
-                if req == 'mandatory':
-                    errs.append(f"{where}: Mandatory token {token} not available")
-                return None
-
-        def encode(node, value, errs):
-            """encode given value inside DOM node"""
-            if value is not None:
-                writetext(node, token, str(value))
-            else:
-                if req == 'mandatory':
-                    errs.append(f"Mandatory token {token} not available")
-
-        def errors(value, where):
-            errs = []
-            if value and not isinstance(value, token_type):
-                errs.append(f"{where}: Type mismatch. Expected {token_type}, got {type(value)}")
-            return errs
-
-        def format(value, f, errs):
-            """format value for pretty printing"""
-            f.add_literal_data(str(value))
-
-        return initialize, decode, encode, errors, format
+    @staticmethod
+    def gen_tag_member(cls, tag):
+        spec = getattr(cls, 't_' + tag)
+        return cls.gen_tag(tag, spec)
 
     @classmethod
     def gen_class_tag(cls, tag, spec):
@@ -626,11 +554,11 @@ class autoxml(type):
             return make_object()
 
         def decode(node, errs, where):
-            node = xmlext.getNode(node, tag)
-            if node:
+            node_ = xmlext.getNode(node, tag)
+            if node_:
                 try:
                     obj = make_object()
-                    obj.decode(node, errs, where)
+                    obj.decode(node_, errs, where)
                     return obj
                 except Error:
                     errs.append(f"{where}: Type mismatch: DOM cannot be decoded")
@@ -666,7 +594,7 @@ class autoxml(type):
                 if req == 'mandatory':
                     errs.append("Mandatory argument not available")
 
-        return init, decode, encode, errors, format
+        return (name, init, decode, encode, errors, format)
 
     @classmethod
     def gen_list_tag(cls, tag, spec):
@@ -681,7 +609,7 @@ class autoxml(type):
             raise Error("List type must contain only one element")
 
         x = cls.gen_tag(comp_tag, [tag_type[0], 'mandatory'])
-        (init_item, decode_item, encode_item, errors_item, format_item) = x
+        (init_item, decode_item, encode_item, errors_item, format_item) = x[1:]
 
         def init():
             return []
@@ -690,12 +618,12 @@ class autoxml(type):
             l = []
             nodes = xmlext.getAllNodes(node, path)
             if len(nodes) == 0 and req == 'mandatory':
-                errs.append(f"{where}: Mandatory list \"{path}\" under \"{node.name()}\" node is empty.")
+                errs.append(f"{where}: Mandatory list \"{path}\" under \"{node.tag}\" node is empty.")
             ix = 1
-            for node in nodes:
-                dummy = xmlext.newNode(node, "Dummy")
-                xmlext.addNode(dummy, '', node)
-                l.append(decode_item(dummy, errs, f"{where}[{ix}]"))
+            for node_ in nodes:
+                dummy = xmlext.newNode(node_, "Dummy")
+                xmlext.addNode(dummy, '', node_)
+                l.append(decode_item(dummy, errs, f"{where}[{ix}]") )
                 ix += 1
             return l
 
@@ -709,23 +637,23 @@ class autoxml(type):
                     encode_item(listnode, item, errs)
             else:
                 if req == 'mandatory':
-                    errs.append(f"Mandatory list \"{path}\" under \"{node.name()}\" node is empty.")
+                    errs.append(f"Mandatory list \"{path}\" under \"{node.tag}\" node is empty.")
 
         def errors(l, where):
             errs = []
             ix = 1
-            for node in l:
-                errs.extend(errors_item(node, f"{where}[{ix}]"))
+            for node_ in l:
+                errs.extend(errors_item(node_, f"{where}[{ix}]") )
                 ix += 1
             return errs
 
         def format(l, f, errs):
             l.sort()
-            for node in l:
-                format_item(node, f, errs)
+            for node_ in l:
+                format_item(node_, f, errs)
                 f.add_literal_data(' ')
 
-        return init, decode, encode, errors, format
+        return (name, init, decode, encode, errors, format)
 
     @classmethod
     def gen_insetclass_tag(cls, tag, spec):
@@ -785,3 +713,48 @@ class autoxml(type):
         int: int,
         float: float
     }
+
+    @classmethod
+    def mixed_case(cls, identifier):
+        """helper function to turn token name into mixed case"""
+        if identifier == "":
+            return ""
+        else:
+            if identifier[0] == 'I':
+                lowly = 'i'   # because of locale considerations in lowercasing
+            else:
+                lowly = identifier[0].lower()
+            return lowly + identifier[1:]
+
+    @classmethod
+    def tagpath_head_last(cls, tagpath):
+        "returns split of the tag path into last tag and the rest"
+        try:
+            lastsep = tagpath.rindex('/')
+        except ValueError as e:
+            return ('', tagpath)
+        return (tagpath[:lastsep], tagpath[lastsep+1:])
+
+    @classmethod
+    def parse_spec(cls, token, spec):
+        """decompose member specification"""
+        name = cls.mixed_case(token)
+        token_type = spec[0]
+        req = spec[1]
+
+        if len(spec) >= 3:
+            path = spec[2]  # an alternative path specified
+        elif isinstance(token_type, list):
+            if isinstance(token_type[0], autoxml):
+                # if list of class, by default nested like in most PSPEC
+                path = token + '/' + token_type[0].tag
+            else:
+                # if list of ordinary type, just take the name
+                path = token
+        elif isinstance(token_type, autoxml):
+            # if a class, by default its tag
+            path = token_type.tag
+        else:
+            path = token  # otherwise it's the same name as the token
+
+        return name, token_type, req, path

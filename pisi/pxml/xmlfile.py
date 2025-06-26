@@ -18,14 +18,14 @@ in xml.dom :( )
 Function names are mixedCase for compatibility with minidom,
 an 'old library'.
 
-This implementation uses piksemel.
+This implementation uses xml.etree.ElementTree.
 """
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
-import piksemel as iks
+import xml.etree.ElementTree as ET
 
 import pisi
 import pisi.file
@@ -41,7 +41,7 @@ class XmlFile(object):
 
     def newDocument(self):
         """Clear DOM"""
-        self.doc = iks.newDocument(self.rootTag)
+        self.doc = ET.Element(self.rootTag)
 
     def unlink(self):
         """Deallocate DOM structure"""
@@ -54,7 +54,7 @@ class XmlFile(object):
     def parsexml(self, xml):
         """Parses xml string and returns DOM"""
         try:
-            self.doc = iks.parseString(xml)
+            self.doc = ET.fromstring(xml)
             return self.doc
         except Exception as e:  # Updated to use 'as'
             raise Error(_("String '%s' has invalid XML") % (xml))
@@ -81,7 +81,8 @@ class XmlFile(object):
                                                 compress=compress, sign=sign, copylocal=copylocal)
 
         try:
-            self.doc = iks.parse(localpath)
+            tree = ET.parse(localpath)
+            self.doc = tree.getroot()
             return self.doc
         except OSError as e:  # Updated to use 'as'
             raise Error(_("Unable to read file (%s): %s") % (localpath, e))
@@ -90,8 +91,8 @@ class XmlFile(object):
 
     def writexml(self, uri, tmpDir='/tmp', sha1sum=False, compress=None, sign=None):
         f = pisi.file.File(uri, pisi.file.File.write, sha1sum=sha1sum, compress=compress, sign=sign)
-        f.write(self.doc.toPrettyString())
+        f.write(ET.tostring(self.doc, encoding='unicode'))
         f.close()
 
     def writexmlfile(self, f):
-        f.write(self.doc.toPrettyString())
+        f.write(ET.tostring(self.doc, encoding='unicode'))

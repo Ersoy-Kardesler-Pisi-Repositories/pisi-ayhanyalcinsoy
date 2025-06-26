@@ -13,18 +13,31 @@
 import re
 import time
 import gzip
+import zlib
 import gettext
 import datetime
+import xml.etree.ElementTree as ET
+import locale
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
-
-import piksemel
+_ = __trans.gettext
 
 import pisi.db
 import pisi.metadata
 import pisi.dependency
 import pisi.db.itembyrepo
 import pisi.db.lazydb as lazydb
+
+def get_lang():
+    try:
+        lang, encoding = locale.getlocale()
+        if not lang:
+            lang, encoding = locale.getdefaultlocale()
+        if lang is None:
+            return 'en'
+        else:
+            return lang[0:2]
+    except Exception:
+        return 'en'
 
 class PackageDB(lazydb.LazyDB):
 
@@ -52,29 +65,31 @@ class PackageDB(lazydb.LazyDB):
         self.rpdb = pisi.db.itembyrepo.ItemByRepo(self.__replaces)
 
     def __generate_replaces(self, doc):
-        return [x.getTagData("Name") for x in doc.tags("Package") if x.getTagData("Replaces")]
+        return [pkg.findtext("Name") for pkg in doc.findall("Package") if pkg.find("Replaces") is not None]
 
     def __generate_obsoletes(self, doc):
-        distribution = doc.getTag("Distribution")
-        obsoletes = distribution and distribution.getTag("Obsoletes")
-        src_repo = doc.getTag("SpecFile") is not None
+        distribution = doc.find("Distribution")
+        obsoletes = distribution.find("Obsoletes") if distribution is not None else None
+        src_repo = doc.find("SpecFile") is not None
 
-        if not obsoletes or src_repo:
+        if obsoletes is None or src_repo:
             return []
 
-        return [x.firstChild().data() for x in obsoletes.tags("Package")]
+        return [pkg.text for pkg in obsoletes.findall("Package")]
 
     def __generate_packages(self, doc):
-        return {x.getTagData("Name"): gzip.zlib.compress(x.toString().encode('utf-8')) for x in doc.tags("Package")}
+        return {pkg.findtext("Name"): zlib.compress(ET.tostring(pkg, encoding='utf-8')) for pkg in doc.findall("Package")}
 
     def __generate_revdeps(self, doc):
         revdeps = {}
-        for node in doc.tags("Package"):
-            name = node.getTagData('Name')
-            deps = node.getTag('RuntimeDependencies')
-            if deps:
-                for dep in deps.tags("Dependency"):
-                    revdeps.setdefault(dep.firstChild().data(), set()).add((name, dep.toString()))
+        for node in doc.findall("Package"):
+            name = node.findtext('Name')
+            deps = node.find("RuntimeDependencies")
+            if deps is not None:
+                for dep in deps.findall("Dependency"):
+                    dep_name = dep.text
+                    dep_xml = ET.tostring(dep, encoding='utf-8')
+                    revdeps.setdefault(dep_name, set()).add((name, dep_xml))
         return revdeps
 
     def has_package(self, name, repo=None):
@@ -84,14 +99,19 @@ class PackageDB(lazydb.LazyDB):
         pkg, repo = self.get_package_repo(name, repo)
         return pkg
 
+    def ensure_str(self, s):
+        if isinstance(s, bytes):
+            return s.decode('utf-8')
+        return s
+
     def search_in_packages(self, packages, terms, lang=None):
         resum = r'<Summary xml:lang=.(%s|en).>.*?%s.*?</Summary>'
         redesc = r'<Description xml:lang=.(%s|en).>.*?%s.*?</Description>'
         if lang is None:
-            lang = pisi.pxml.autoxml.LocalText.get_lang()
+            lang = get_lang()
         found = []
         for name in packages:
-            xml = self.pdb.get_item(name)
+            xml = self.ensure_str(self.pdb.get_item(name))
             if terms == list(filter(lambda term: re.compile(term, re.I).search(name) or 
                                             re.compile(resum % (lang, term), re.I).search(xml) or 
                                             re.compile(redesc % (lang, term), re.I).search(xml), terms)):
@@ -99,23 +119,15 @@ class PackageDB(lazydb.LazyDB):
         return found
 
     def search_package(self, terms, lang=None, repo=None, fields=None, cs=False):
-        """
-        fields (dict): looks for terms in the fields which are marked as True.
-        If the fields is equal to None the method will search on all fields.
-
-        example:
-        if fields is equal to: {'name': True, 'summary': True, 'desc': False}
-        This method will return only package that contents terms in the package
-        name or summary.
-        """
         resum = r'<Summary xml:lang=.(%s|en).>.*?%s.*?</Summary>'
         redesc = r'<Description xml:lang=.(%s|en).>.*?%s.*?</Description>'
         if lang is None:
-            lang = pisi.pxml.autoxml.LocalText.get_lang()
+            lang = get_lang()
         if fields is None:
             fields = {'name': True, 'summary': True, 'desc': True}
         found = []
         for name, xml in self.pdb.get_items_iter(repo):
+            xml = self.ensure_str(xml)
             if terms == list(filter(lambda term: (fields['name'] and 
                     re.compile(term, re.I).search(name)) or 
                     (fields['summary'] and 
@@ -143,14 +155,14 @@ class PackageDB(lazydb.LazyDB):
         if not self.has_package(name, repo):
             raise Exception(_('Package %s not found.') % name)
 
-        pkg_doc = piksemel.parseString(self.pdb.get_item(name, repo).decode('utf-8'))
+        pkg_doc = ET.fromstring(self.pdb.get_item(name, repo).decode('utf-8'))
         return self.__get_version(pkg_doc) + self.__get_distro_release(pkg_doc)
 
     def get_version(self, name, repo):
         if not self.has_package(name, repo):
             raise Exception(_('Package %s not found.') % name)
 
-        pkg_doc = piksemel.parseString(self.pdb.get_item(name, repo).decode('utf-8'))
+        pkg_doc = ET.fromstring(self.pdb.get_item(name, repo).decode('utf-8'))
         return self.__get_version(pkg_doc)
 
     def get_package_repo(self, name, repo=None):
@@ -186,12 +198,12 @@ class PackageDB(lazydb.LazyDB):
 
         rev_deps = []
         for pkg, dep in rvdb:
-            node = piksemel.parseString(dep)
+            node = ET.fromstring(dep)
             dependency = pisi.dependency.Dependency()
-            dependency.package = node.firstChild().data()
-            if node.attributes():
-                attr = node.attributes()[0]
-                dependency.__dict__[attr] = node.getAttribute(attr)
+            dependency.package = node.findtext(".")
+            if node.attrib:
+                for attr, value in node.attrib.items():
+                    dependency.__dict__[attr] = value
             rev_deps.append((pkg, dependency))
         return rev_deps
 
@@ -201,12 +213,11 @@ class PackageDB(lazydb.LazyDB):
 
         for pkg_name in self.rpdb.get_list_item():
             xml = self.pdb.get_item(pkg_name, repo)
-            package = piksemel.parseString(xml.decode('utf-8'))
-            replaces_tag = package.getTag("Replaces")
-            if replaces_tag:
-                for node in replaces_tag.tags("Package"):
+            package = ET.fromstring(xml.decode('utf-8'))
+            replaces_tag = package.find("Replaces")
+            if replaces_tag is not None:
+                for node in replaces_tag.findall("Package"):
                     r = pisi.relation.Relation()
-                    # XXX Is there a better way to do this?
                     r.decode(node, [])
                     if pisi.replace.installed_package_replaced(r):
                         pairs.setdefault(r.package, []).append(pkg_name)

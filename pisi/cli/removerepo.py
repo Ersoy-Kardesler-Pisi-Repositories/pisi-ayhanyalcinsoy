@@ -17,14 +17,13 @@ _ = __trans.gettext  # Python 3'te ugettext yerine gettext kullanılır
 import pisi.cli.command as command
 import pisi.api
 
-class RemoveRepo(command.Command):
+class RemoveRepo(command.Command, metaclass=command.autocommand):
     __doc__ = _("""Remove repositories
 
 Usage: remove-repo <repo1> <repo2> ... <repon>
 
 Remove all repository information from the system.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super().__init__(args)  # Python 3'te super() kullanımı

@@ -12,10 +12,10 @@
 
 import gettext
 __trans = gettext.translation('pisi', fallback=True)
-_ = __trans.ugettext
+_ = __trans.gettext
 
 import os
-import piksemel
+import xml.etree.ElementTree as ET
 import pisi
 import pisi.uri
 import pisi.util
@@ -45,47 +45,49 @@ class RepoOrder:
         repo_doc = self._get_doc()
 
         try:
-            node = [x for x in repo_doc.tags("Repo")][-1]
-            repo_node = node.appendTag("Repo")
+            repos = repo_doc.findall("Repo")
+            if repos:
+                repo_node = ET.SubElement(repo_doc, "Repo")
+            else:
+                repo_node = ET.SubElement(repo_doc, "Repo")
         except IndexError:
-            repo_node = repo_doc.insertTag("Repo")
+            repo_node = ET.SubElement(repo_doc, "Repo")
 
-        name_node = repo_node.insertTag("Name")
-        name_node.insertData(repo_name)
+        name_node = ET.SubElement(repo_node, "Name")
+        name_node.text = repo_name
 
-        url_node = repo_node.insertTag("Url")
-        url_node.insertData(repo_url)
+        url_node = ET.SubElement(repo_node, "Url")
+        url_node.text = repo_url
 
-        status_node = repo_node.insertTag("Status")
-        status_node.insertData("active")
+        status_node = ET.SubElement(repo_node, "Status")
+        status_node.text = "active"
 
-        media_node = repo_node.insertTag("Media")
-        media_node.insertData(repo_type)
+        media_node = ET.SubElement(repo_node, "Media")
+        media_node.text = repo_type
 
         self._update(repo_doc)
 
     def set_status(self, repo_name, status):
         repo_doc = self._get_doc()
 
-        for r in repo_doc.tags("Repo"):
-            if r.getTagData("Name") == repo_name:
-                status_node = r.getTag("Status")
-                if status_node:
-                    status_node.firstChild().hide()
-                    status_node.insertData(status)
+        for r in repo_doc.findall("Repo"):
+            if r.findtext("Name") == repo_name:
+                status_node = r.find("Status")
+                if status_node is not None:
+                    status_node.text = status
                 else:
-                    status_node = r.insertTag("Status")
-                    status_node.insertData(status)
+                    status_node = ET.SubElement(r, "Status")
+                    status_node.text = status
 
         self._update(repo_doc)
 
     def get_status(self, repo_name):
         repo_doc = self._get_doc()
-        for r in repo_doc.tags("Repo"):
-            if r.getTagData("Name") == repo_name:
-                status_node = r.getTag("Status")
-                if status_node:
-                    status = status_node.firstChild().data()
+        for r in repo_doc.findall("Repo"):
+            if r.findtext("Name") == repo_name:
+                status_node = r.find("Status")
+                if status_node is not None:
+                    status = status_node.text
                     if status in ["active", "inactive"]:
                         return status
         return "inactive"
@@ -93,9 +95,9 @@ class RepoOrder:
     def remove(self, repo_name):
         repo_doc = self._get_doc()
 
-        for r in repo_doc.tags("Repo"):
-            if r.getTagData("Name") == repo_name:
-                r.hide()
+        for r in repo_doc.findall("Repo"):
+            if r.findtext("Name") == repo_name:
+                repo_doc.remove(r)
 
         self._update(repo_doc)
 
@@ -111,8 +113,8 @@ class RepoOrder:
 
     def _update(self, doc):
         repos_file = os.path.join(ctx.config.info_dir(), ctx.const.repos)
-        with open(repos_file, "w") as f:
-            f.write("%s\n" % doc.toPrettyString())
+        tree = ET.ElementTree(doc)
+        tree.write(repos_file, encoding='utf-8', xml_declaration=True)
         self._doc = None
         self.repos = self._get_repos()
 
@@ -120,9 +122,10 @@ class RepoOrder:
         if self._doc is None:
             repos_file = os.path.join(ctx.config.info_dir(), ctx.const.repos)
             if os.path.exists(repos_file):
-                self._doc = piksemel.parse(repos_file)
+                tree = ET.parse(repos_file)
+                self._doc = tree.getroot()
             else:
-                self._doc = piksemel.newDocument("REPOS")
+                self._doc = ET.Element("REPOS")
 
         return self._doc
 
@@ -130,10 +133,10 @@ class RepoOrder:
         repo_doc = self._get_doc()
         order = {}
 
-        for r in repo_doc.tags("Repo"):
-            media = r.getTagData("Media")
-            name = r.getTagData("Name")
-            status = r.getTagData("Status")
+        for r in repo_doc.findall("Repo"):
+            media = r.findtext("Media")
+            name = r.findtext("Name")
+            status = r.findtext("Status")
             order.setdefault(media, []).append(name)
 
         return order
@@ -165,10 +168,11 @@ class RepoDB(lazydb.LazyDB):
 
         if not os.path.exists(index_path):
             ctx.ui.warning(_("%s repository needs to be updated") % repo_name)
-            return piksemel.newDocument("PISI")
+            return ET.Element("PISI")
 
         try:
-            return piksemel.parse(index_path)
+            tree = ET.parse(index_path)
+            return tree.getroot()
         except Exception as e:
             raise RepoError(_("Error parsing repository index information. Index file does not exist or is malformed."))
 
@@ -197,14 +201,14 @@ class RepoDB(lazydb.LazyDB):
     def get_source_repos(self, only_active=True):
         repos = []
         for r in self.list_repos(only_active):
-            if self.get_repo_doc(r).getTag("SpecFile"):
+            if self.get_repo_doc(r).findtext("SpecFile"):
                 repos.append(r)
         return repos
 
     def get_binary_repos(self, only_active=True):
         repos = []
         for r in self.list_repos(only_active):
-            if not self.get_repo_doc(r).getTag("SpecFile"):
+            if not self.get_repo_doc(r).findtext("SpecFile"):
                 repos.append(r)
         return repos
 
@@ -236,13 +240,13 @@ class RepoDB(lazydb.LazyDB):
 
     def get_distribution(self, name):
         doc = self.get_repo_doc(name)
-        distro = doc.getTag("Distribution")
-        return distro and distro.getTagData("SourceName")
+        distro = doc.find("Distribution")
+        return distro and distro.findtext("SourceName")
 
     def get_distribution_release(self, name):
         doc = self.get_repo_doc(name)
-        distro = doc.getTag("Distribution")
-        return distro and distro.getTagData("Version")
+        distro = doc.find("Distribution")
+        return distro and distro.findtext("Version")
 
     def check_distribution(self, name):
         if ctx.get_option('ignore_check'):

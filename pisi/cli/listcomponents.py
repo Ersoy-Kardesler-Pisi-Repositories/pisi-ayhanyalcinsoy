@@ -20,7 +20,7 @@ import pisi.cli.command as command
 import pisi.context as ctx
 import pisi.db
 
-class ListComponents(command.Command):
+class ListComponents(command.Command, metaclass=command.autocommand):
     __doc__ = _("""List available components
 
 Usage: list-components
@@ -28,7 +28,6 @@ Usage: list-components
 Gives a brief list of PiSi components published in the
 repositories.
 """)
-    __metaclass__ = command.autocommand
 
     def __init__(self, args):
         super(ListComponents, self).__init__(args)

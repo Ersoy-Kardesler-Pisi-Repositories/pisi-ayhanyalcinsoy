@@ -3,8 +3,7 @@
 
 import os
 import urllib2
-
-import piksemel
+import xml.etree.ElementTree as ET
 
 first_revision = "27898"
 accounts_url = "http://svn.pardus.org.tr/uludag/trunk/common/accounts"
@@ -72,13 +71,14 @@ def create_log_entry(author, date, msg):
 
 if __name__ == "__main__":
     p = os.popen("svn log -r%s:HEAD --xml" % first_revision)
-    doc = piksemel.parseString(p.read())
+    tree = ET.parse(p)
+    doc = tree.getroot()
 
     entries = []
-    for log_entry in doc.tags("logentry"):
-        author = log_entry.getTagData("author")
-        date = log_entry.getTagData("date")
-        msg = log_entry.getTagData("msg")
+    for log_entry in doc.findall("logentry"):
+        author = log_entry.findtext("author")
+        date = log_entry.findtext("date")
+        msg = log_entry.findtext("msg")
 
         entry = create_log_entry(author, date, msg.strip())
         if entry:
