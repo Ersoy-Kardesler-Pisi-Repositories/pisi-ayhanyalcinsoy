@@ -13,6 +13,7 @@
 import testcase
 import pisi
 
+
 class FilesDBTestCase(testcase.TestCase):
 
     filesdb = pisi.db.filesdb.FilesDB()
@@ -37,7 +38,7 @@ class FilesDBTestCase(testcase.TestCase):
         fileinfo1.path = "etc/pisi/pisi.conf"
         fileinfo2 = pisi.files.FileInfo()
         fileinfo2.path = "etc/pisi/mirrors.conf"
-        
+
         files = pisi.files.Files()
         files.list.append(fileinfo1)
         files.list.append(fileinfo2)
@@ -58,11 +59,11 @@ class FilesDBTestCase(testcase.TestCase):
 
         assert not self.filesdb.has_file("etc/pisi/pisi.conf")
         assert not self.filesdb.has_file("etc/pisi/mirrors.conf")
-        
+
     def testSearchFile(self):
         assert not self.filesdb.search_file("ethtool")
         pisi.api.install(["ethtool"])
         found = self.filesdb.search_file("ethtool")
         pkg, files = found[0]
-        assert set(files) == set(['usr/bin/ethtool'])
+        assert set(files) == set(["usr/bin/ethtool"])
         pisi.api.remove(["ethtool"])

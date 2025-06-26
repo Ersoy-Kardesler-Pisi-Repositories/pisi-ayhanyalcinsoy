@@ -27,9 +27,14 @@ import pisi.db.lazydb as lazydb
 
 class FilesDB(lazydb.LazyDB):
 
+    def __init__(self):
+        super().__init__()
+        self.initialized = False
+
     def init(self):
         self.filesdb = {}
         self.__check_filesdb()
+        self.initialized = True
 
     def has_file(self, path):
         return hashlib.md5(path.encode('utf-8')).digest() in self.filesdb  # Python 3'te 'has_key' yerine 'in' kullanıldı

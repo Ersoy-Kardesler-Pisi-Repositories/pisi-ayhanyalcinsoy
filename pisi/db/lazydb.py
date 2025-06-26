@@ -26,7 +26,11 @@ class Singleton(object):
 
     def __new__(cls):
         if cls.__name__ not in Singleton._the_instances:
-            Singleton._the_instances[cls.__name__] = super(Singleton, cls).__new__(cls)
+            instance = super(Singleton, cls).__new__(cls)
+            # Ensure initialized is set before any __getattr__ calls
+            if not hasattr(instance, "initialized"):
+                instance.initialized = False
+            Singleton._the_instances[cls.__name__] = instance
         return Singleton._the_instances[cls.__name__]
 
     def _instance(self):
@@ -41,8 +45,7 @@ class LazyDB(Singleton):
     cache_version = "2.7.1"
 
     def __init__(self, cacheable=False, cachedir=None):
-        if not hasattr(self, "initialized"):
-            self.initialized = False
+        self.initialized = False  # Always set directly
         self.cacheable = cacheable
         self.cachedir = cachedir
 
@@ -113,7 +116,7 @@ class LazyDB(Singleton):
             self.init()
 
     def __getattr__(self, attr):
-        if attr != "__setstate__" and not self.initialized:
+        if attr != "__setstate__" and ('initialized' not in self.__dict__ or not self.__dict__['initialized']):
             start = time.time()
             self.__init()
             end = time.time()

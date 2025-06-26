@@ -13,6 +13,7 @@
 import testcase
 import pisi
 
+
 class SourceDBTestCase(testcase.TestCase):
 
     def setUp(self):
@@ -20,13 +21,27 @@ class SourceDBTestCase(testcase.TestCase):
 
         self.sourcedb = pisi.db.sourcedb.SourceDB()
 
-
     def testListSources(self):
-        assert set(self.sourcedb.list_sources()) == set(['ethtool', 'nfdump', 'shadow', 'libidn', 
-                                                         'zlib', 'db4', 'openssl', 'jpeg', 'gsl', 
-                                                         'curl', 'bogofilter', 'ncftp', 'pam', 
-                                                         'bash', 'cracklib'])
-    
+        assert set(self.sourcedb.list_sources()) == set(
+            [
+                "ethtool",
+                "nfdump",
+                "shadow",
+                "libidn",
+                "zlib",
+                "db4",
+                "openssl",
+                "jpeg",
+                "gsl",
+                "curl",
+                "bogofilter",
+                "ncftp",
+                "pam",
+                "bash",
+                "cracklib",
+            ]
+        )
+
     def testHasSpec(self):
         assert self.sourcedb.has_spec("ethtool")
         assert not self.sourcedb.has_spec("hedehodo")
@@ -58,5 +73,3 @@ class SourceDBTestCase(testcase.TestCase):
 
         packages = self.sourcedb.search_spec(["bogo", "filter"], repo="pardus-2007-src")
         assert set(["bogofilter"]) == set(packages)
-
-

@@ -13,6 +13,7 @@
 import unittest
 import pisi.db.lazydb as lazydb
 
+
 class TestDB(lazydb.LazyDB):
 
     def init(self):
@@ -20,6 +21,7 @@ class TestDB(lazydb.LazyDB):
 
     def getTestField(self):
         return self.testfield
+
 
 class LazyDBTestCase(unittest.TestCase):
 

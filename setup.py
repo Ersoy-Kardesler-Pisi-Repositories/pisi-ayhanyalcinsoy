@@ -28,6 +28,14 @@ IN_FILES = ("pisi.xml.in",)
 PROJECT = "pisi"
 MIMEFILE_DIR = "usr/share/mime/packages"
 
+# Test dependencies
+TEST_REQUIRES = [
+    'pytest>=7.0.0',
+    'pytest-cov>=4.0.0',
+    'pytest-mock>=3.10.0',
+    'pytest-xdist>=3.0.0',
+]
+
 
 class Build(build):
     def run(self):
@@ -161,13 +169,17 @@ setup(
     author="Pisi Linux Developers",
     author_email="admins@pisilinux.org",
     url="https://github.com/pisilinux/project/tree/master/pisi",
-    package_dir={'': ''},
+    package_dir={'': '.'},
     packages=['pisi', 'pisi.cli', 'pisi.operations', 'pisi.actionsapi', 'pisi.pxml', 'pisi.scenarioapi', 'pisi.db'],
     scripts=['pisi-cli', 'scripts/lspisi', 'scripts/unpisi', 'scripts/check-newconfigs.py', 'scripts/revdep-rebuild'],
     cmdclass={
         'build': Build,
         'build_po': BuildPo,
         'install': Install},
+    extras_require={
+        'test': TEST_REQUIRES,
+    },
+    python_requires='>=3.6',
 )
 
 # the below stuff is really nice but we already have a version

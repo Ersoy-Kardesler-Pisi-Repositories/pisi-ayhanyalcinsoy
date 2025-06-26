@@ -3,11 +3,12 @@ import unittest
 import pisi
 import pisi.context as ctx
 
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
         options = pisi.config.Options()
-        options.destdir = 'repos/tmp'
+        options.destdir = "repos/tmp"
         pisi.api.set_options(options)
         pisi.api.set_comar(False)
 

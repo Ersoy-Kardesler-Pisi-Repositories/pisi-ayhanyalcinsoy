@@ -12,7 +12,12 @@
 
 import os
 import re
-import plyvel
+try:
+    import plyvel
+    PLYVEL_AVAILABLE = True
+except ImportError:
+    PLYVEL_AVAILABLE = False
+    plyvel = None
 import hashlib
 
 import gettext
@@ -24,6 +29,8 @@ import pisi.context as ctx
 
 class FilesLDB():
     def __init__(self):
+        if not PLYVEL_AVAILABLE:
+            raise ImportError("plyvel is required for FilesLDB functionality")
         self.files_ldb_path = os.path.join(ctx.config.info_dir(), ctx.const.files_ldb)
         self.filesdb = plyvel.DB(self.files_ldb_path, create_if_missing=True)
         # .ldb uzantılı dosyaların varlığını kontrol et

@@ -306,3 +306,7 @@ class Specfile(xmlfile.XmlFile):
         if self.has_sources():
             return self.sources[0]
         return None
+
+__all__ = ['SpecFile', 'Package', 'Source', 'Archive', 'Patch', 'Update', 'Packager', 'AdditionalFile', 'Path', 'ComarProvide', 'AnyDependency', 'Type', 'Action']
+
+SpecFile = Specfile
