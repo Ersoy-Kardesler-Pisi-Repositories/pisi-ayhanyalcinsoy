@@ -15,13 +15,12 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
 ## Migration Status
 
 ### ✅ Completed
-- Created `pytest.ini` configuration file
-- Created `tests/conftest.py` with shared fixtures
+- Created `pytest.ini` configuration file with comprehensive settings
+- Created `tests/conftest.py` with shared fixtures and environment setup
 - Created `requirements-test.txt` with test dependencies
-- Updated `setup.py` with test dependencies
-- Created `Makefile` with test commands
+- Updated `Makefile` with comprehensive test commands
 - Created comprehensive `tests/README.md`
-- Converted several test files to pytest format:
+- Converted core test files to pytest format:
   - `tests/test_constants.py`
   - `tests/test_version.py`
   - `tests/test_archive.py`
@@ -29,31 +28,58 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
   - `tests/test_dependency.py`
   - `tests/test_util.py`
   - `tests/test_uri.py`
+  - `tests/test_metadata.py`
+  - `tests/test_fetch.py`
+  - `tests/test_file.py`
+  - `tests/test_conflict.py`
+  - `tests/test_graph.py`
+  - `tests/test_relation.py`
+  - `tests/test_srcarchive.py`
+  - `tests/test_history.py`
+  - `tests/test_replace.py`
+  - `tests/test_mirrors.py`
+  - `tests/test_configfile.py`
+  - `tests/test_files.py`
+  - `tests/test_package.py`
+  - `tests/test_shell.py`
+  - `tests/test_specfile.py`
+- Converted database test files:
+  - `tests/database/test_componentdb.py`
+  - `tests/database/test_filesdb.py`
+  - `tests/database/test_installdb.py`
+  - `tests/database/test_itembyrepo.py`
+  - `tests/database/test_lazydb.py`
+  - `tests/database/test_packagedb.py`
+  - `tests/database/test_repodb.py`
+  - `tests/database/test_sourcedb.py`
+- Created automated migration scripts in `scripts/` directory
+- Added comprehensive test configuration and fixtures
 
 ### 🔄 In Progress
-- Migration of remaining test files using automated script
-- Database test conversion
-- Integration test setup
+- Final cleanup of remaining unittest files
+- Performance optimization of converted tests
+- Integration test improvements
 
 ### 📋 To Do
-- Convert remaining unittest files:
-  - `conflicttests.py`
-  - `fetchtest.py`
-  - `filetest.py`
-  - `filestest.py`
-  - `graphtest.py`
-  - `historytest.py`
-  - `metadatatest.py`
-  - `mirrorstest.py`
-  - `packagetest.py`
-  - `relationtest.py`
-  - `replacetest.py`
-  - `shelltest.py`
-  - `specfiletests.py`
-  - `srcarchivetest.py`
-- Convert database tests in `tests/database/`
-- Update CI/CD configuration
-- Performance optimization
+- Remove old unittest files (keeping converted versions):
+  - `conflicttests.py` → `test_conflict.py` ✅
+  - `fetchtest.py` → `test_fetch.py` ✅
+  - `filetest.py` → `test_file.py` ✅
+  - `filestest.py` → `test_files.py` ✅
+  - `graphtest.py` → `test_graph.py` ✅
+  - `historytest.py` → `test_history.py` ✅
+  - `metadatatest.py` → `test_metadata.py` ✅
+  - `mirrorstest.py` → `test_mirrors.py` ✅
+  - `packagetest.py` → `test_package.py` ✅
+  - `relationtest.py` → `test_relation.py` ✅
+  - `replacetest.py` → `test_replace.py` ✅
+  - `shelltest.py` → `test_shell.py` ✅
+  - `specfiletests.py` → `test_specfile.py` ✅
+  - `srcarchivetest.py` → `test_srcarchive.py` ✅
+  - Database tests in `tests/database/` → All converted ✅
+- Update CI/CD configuration for pytest
+- Performance optimization and parallel execution
+- Add more comprehensive test coverage
 
 ## Key Changes
 
@@ -96,15 +122,18 @@ addopts =
     --strict-markers
     --disable-warnings
 markers =
-    slow: marks tests as slow
+    slow: marks tests as slow (deselect with '-m "not slow"')
     integration: marks tests as integration tests
     unit: marks tests as unit tests
     database: marks tests that require database setup
+filterwarnings =
+    ignore::DeprecationWarning
+    ignore::PendingDeprecationWarning
 ```
 
 ### conftest.py
 Provides shared fixtures:
-- `setup_pisi_environment` - Sets up PiSi environment
+- `setup_pisi_environment` - Sets up PiSi environment for all tests
 - `temp_dir` - Temporary directory for tests
 - `clean_repos` - Clean test repositories
 
@@ -137,6 +166,9 @@ pytest -n auto
 
 # Skip slow tests
 pytest -m "not slow"
+
+# Run only fast tests
+make test-fast
 ```
 
 ### Using Makefile
@@ -144,23 +176,44 @@ pytest -m "not slow"
 make install-test-deps
 make test
 make test-unit
+make test-integration
+make test-database
 make test-coverage
+make test-fast
+make test-parallel
 make clean-tests
+make setup-test-repos
 ```
 
-## Migration Script
+## Migration Scripts
 
-The `scripts/migrate_tests_to_pytest.py` script helps automate the conversion of remaining unittest files:
+Several automated scripts have been created to help with the migration:
 
+### Main Migration Script
 ```bash
 python scripts/migrate_tests_to_pytest.py
 ```
 
-This script:
-- Converts test classes to functions
-- Transforms assertions
-- Adds pytest decorators
-- Preserves test logic
+### Database Test Conversion
+```bash
+python scripts/convert_database_tests.py
+```
+
+### Fix Scripts
+```bash
+python scripts/fix_converted_tests.py
+python scripts/fix_remaining_errors.py
+python scripts/fix_indentation_errors.py
+python scripts/fix_mixed_test_files.py
+python scripts/fix_final_errors.py
+```
+
+These scripts:
+- Convert test classes to functions
+- Transform assertions
+- Add pytest decorators
+- Preserve test logic
+- Fix common migration issues
 
 ## Benefits
 
@@ -265,8 +318,23 @@ This script:
    - Improve migration documentation
    - Create testing guidelines
 
+## Migration Progress Summary
+
+| Category | Total Files | Converted | Remaining | Progress |
+|----------|-------------|-----------|-----------|----------|
+| Core Tests | 20 | 20 | 0 | 100% ✅ |
+| Database Tests | 8 | 8 | 0 | 100% ✅ |
+| Old Files | 20 | 0 | 20 | 0% (to be removed) |
+| **Total** | **48** | **28** | **20** | **58%** |
+
 ## Conclusion
 
-The migration to pytest provides a modern, powerful testing framework for the PiSi project. The new structure offers better organization, improved performance, and enhanced developer experience while maintaining compatibility with existing test logic.
+The migration to pytest has been largely completed with all core functionality converted to the new framework. The new structure offers better organization, improved performance, and enhanced developer experience while maintaining compatibility with existing test logic.
 
-The migration is designed to be incremental, allowing for gradual adoption and testing of the new framework while maintaining the existing test suite functionality. 
+The remaining work involves cleaning up old unittest files and optimizing the converted tests for better performance. The migration provides a solid foundation for future test development and maintenance.
+
+### Next Steps
+1. Remove old unittest files after verification
+2. Optimize test performance
+3. Update CI/CD pipelines
+4. Add more comprehensive test coverage 
