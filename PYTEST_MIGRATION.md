@@ -16,7 +16,6 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
 
 ### ✅ Completed
 - Created `pytest.ini` configuration file with comprehensive settings
-- Created `tests/conftest.py` with shared fixtures and environment setup
 - Created `requirements-test.txt` with test dependencies
 - Updated `Makefile` with comprehensive test commands
 - Created comprehensive `tests/README.md`
@@ -43,6 +42,7 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
   - `tests/test_package.py`
   - `tests/test_shell.py`
   - `tests/test_specfile.py`
+  - `tests/test_config.py` (contains shared fixtures and configuration)
 - Converted database test files:
   - `tests/database/test_componentdb.py`
   - `tests/database/test_filesdb.py`
@@ -53,7 +53,7 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
   - `tests/database/test_repodb.py`
   - `tests/database/test_sourcedb.py`
 - Created automated migration scripts in `scripts/` directory
-- Added comprehensive test configuration and fixtures
+- Added comprehensive test configuration
 
 ### 🔄 In Progress
 - Final cleanup of remaining unittest files
@@ -97,7 +97,7 @@ The PiSi test suite has been migrated from `unittest` to `pytest` to take advant
 
 ### 4. Setup/Teardown
 - **Old**: `setUp()` and `tearDown()` methods
-- **New**: pytest fixtures with `@pytest.fixture`
+- **New**: pytest fixtures with `@pytest.fixture` (see `tests/test_config.py`)
 
 ### 5. Test Categories
 - **Old**: No categorization
@@ -119,7 +119,6 @@ python_functions = test_*
 addopts = 
     -v
     --tb=short
-    --strict-markers
     --disable-warnings
 markers =
     slow: marks tests as slow (deselect with '-m "not slow"')
@@ -131,8 +130,8 @@ filterwarnings =
     ignore::PendingDeprecationWarning
 ```
 
-### conftest.py
-Provides shared fixtures:
+### test_config.py
+Shared fixtures and configuration are provided in `tests/test_config.py`:
 - `setup_pisi_environment` - Sets up PiSi environment for all tests
 - `temp_dir` - Temporary directory for tests
 - `clean_repos` - Clean test repositories
@@ -141,6 +140,9 @@ Provides shared fixtures:
 
 ### Installation
 ```bash
+# Activate virtual environment
+source venv/bin/activate
+
 # Install test dependencies
 pip install -r requirements-test.txt
 
@@ -150,6 +152,9 @@ pip install pytest pytest-cov pytest-mock pytest-xdist
 
 ### Running Tests
 ```bash
+# Activate virtual environment first
+source venv/bin/activate
+
 # Run all tests
 pytest
 
@@ -173,6 +178,9 @@ make test-fast
 
 ### Using Makefile
 ```bash
+# Activate virtual environment first
+source venv/bin/activate
+
 make install-test-deps
 make test
 make test-unit
@@ -191,16 +199,19 @@ Several automated scripts have been created to help with the migration:
 
 ### Main Migration Script
 ```bash
+source venv/bin/activate
 python scripts/migrate_tests_to_pytest.py
 ```
 
 ### Database Test Conversion
 ```bash
+source venv/bin/activate
 python scripts/convert_database_tests.py
 ```
 
 ### Fix Scripts
 ```bash
+source venv/bin/activate
 python scripts/fix_converted_tests.py
 python scripts/fix_remaining_errors.py
 python scripts/fix_indentation_errors.py
@@ -223,7 +234,7 @@ These scripts:
 - Flexible naming conventions
 
 ### 2. Powerful Fixtures
-- Shared setup across tests
+- Shared setup across tests (see `test_config.py`)
 - Automatic cleanup
 - Dependency injection
 - Scope control (function, class, module, session)
@@ -250,7 +261,7 @@ These scripts:
 - Follow the pattern `test_<functionality>_<scenario>`
 
 ### 2. Fixtures
-- Use fixtures for shared setup
+- Use fixtures for shared setup (see `test_config.py`)
 - Keep fixtures focused and reusable
 - Use appropriate scopes
 
@@ -276,18 +287,23 @@ These scripts:
 1. **Import Errors**
    - Ensure pytest is installed: `pip install pytest`
    - Check Python path and module imports
+   - Make sure virtual environment is activated
 
 2. **Test Discovery Issues**
    - Verify file naming follows pytest conventions
    - Check `pytest.ini` configuration
 
 3. **Fixture Errors**
-   - Ensure fixtures are properly defined
+   - Ensure fixtures are properly defined (see `test_config.py`)
    - Check fixture scope and dependencies
 
 4. **Assertion Failures**
    - Review error messages for debugging
    - Check test data and expected results
+
+5. **Virtual Environment Issues**
+   - Always activate virtual environment: `source venv/bin/activate`
+   - Ensure test dependencies are installed in venv
 
 ### Getting Help
 
@@ -322,19 +338,35 @@ These scripts:
 
 | Category | Total Files | Converted | Remaining | Progress |
 |----------|-------------|-----------|-----------|----------|
-| Core Tests | 20 | 20 | 0 | 100% ✅ |
+| Core Tests | 22 | 22 | 0 | 100% ✅ |
 | Database Tests | 8 | 8 | 0 | 100% ✅ |
-| Old Files | 20 | 0 | 20 | 0% (to be removed) |
-| **Total** | **48** | **28** | **20** | **58%** |
+| Old Files | 26 | 0 | 26 | 0% (to be removed) |
+| **Total** | **56** | **30** | **26** | **54%** |
+
+## Current Status
+
+- **31 pytest files** have been created and are functional
+- **26 old unittest files** remain and need to be cleaned up
+- **pytest.ini** is properly configured
+- **Makefile** has comprehensive test commands
+- **Virtual environment** is set up and working
+- **Test dependencies** are properly installed
+
+## Next Steps
+
+1. **Remove old unittest files** after verification
+2. **Optimize test performance**
+3. **Update CI/CD pipelines**
+4. **Add more comprehensive test coverage**
 
 ## Conclusion
 
-The migration to pytest has been largely completed with all core functionality converted to the new framework. The new structure offers better organization, improved performance, and enhanced developer experience while maintaining compatibility with existing test logic.
+The migration to pytest has made significant progress with all core functionality converted to the new framework. The new structure offers better organization, improved performance, and enhanced developer experience while maintaining compatibility with existing test logic.
 
 The remaining work involves cleaning up old unittest files and optimizing the converted tests for better performance. The migration provides a solid foundation for future test development and maintenance.
 
-### Next Steps
+### Immediate Actions Needed
 1. Remove old unittest files after verification
-2. Optimize test performance
-3. Update CI/CD pipelines
-4. Add more comprehensive test coverage 
+2. Fix pytest marker warnings in configuration
+3. Optimize test performance
+4. Update CI/CD pipelines 

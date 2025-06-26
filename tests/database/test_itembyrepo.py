@@ -10,98 +10,123 @@
 # Please read the COPYING file.
 #
 
-from . import testcase
+import pytest
 import pisi.db.itembyrepo
 
 
-class TestDB:
-    def __init__(self):
-        self.packages = {}
-        self.obsoletes = {}
+@pytest.fixture
+def testdb():
+    """Provide test database with sample data."""
+    packages = {}
+    obsoletes = {}
 
-        self.packages["pardus-2007"] = {
-            "aggdraw": "package aggdraw",
-            "acpica": "package acpica",
-        }
-        self.packages["contrib-2007"] = {
-            "kdiff3": "package kdiff3",
-            "kmess": "package kmess",
-        }
+    packages["pardus-2007"] = {
+        "aggdraw": "package aggdraw",
+        "acpica": "package acpica",
+    }
+    packages["contrib-2007"] = {
+        "kdiff3": "package kdiff3",
+        "kmess": "package kmess",
+    }
 
-        self.obsoletes["pardus-2007"] = ["wengophone", "rar"]
-        self.obsoletes["contrib-2007"] = ["xara"]
+    obsoletes["pardus-2007"] = ["wengophone", "rar"]
+    obsoletes["contrib-2007"] = ["xara"]
 
-        self.tdb = pisi.db.itembyrepo.ItemByRepo(self.packages)
-        self.odb = pisi.db.itembyrepo.ItemByRepo(self.obsoletes)
+    tdb = pisi.db.itembyrepo.ItemByRepo(packages)
+    odb = pisi.db.itembyrepo.ItemByRepo(obsoletes)
 
-        # original item_repos in ItemByRepo uses repodb.list_repos
-        def item_repos(repo=None):
-            repos = ["pardus-2007", "contrib-2007"]
-            if repo:
-                repos = [repo]
-            return repos
+    # original item_repos in ItemByRepo uses repodb.list_repos
+    def item_repos(repo=None):
+        repos = ["pardus-2007", "contrib-2007"]
+        if repo:
+            repos = [repo]
+        return repos
 
-        self.tdb.item_repos = item_repos
-        self.odb.item_repos = item_repos
+    tdb.item_repos = item_repos
+    odb.item_repos = item_repos
+    
+    return {"tdb": tdb, "odb": odb}
 
 
-class ItemByRepoTestCase(testcase.TestCase):
+@pytest.mark.database
+def test_has_repository(testdb):
+    """Test has_repo method."""
+    assert testdb["tdb"].has_repo("pardus-2007")
+    assert testdb["tdb"].has_repo("contrib-2007")
+    assert not testdb["tdb"].has_repo("hedehodo")
 
-    testdb = TestDB()
 
-    def testHasRepository(self):
-        assert self.testdb.tdb.has_repo("pardus-2007")
-        assert self.testdb.tdb.has_repo("contrib-2007")
-        assert not self.testdb.tdb.has_repo("hedehodo")
+@pytest.mark.database
+def test_has_item(testdb):
+    """Test has_item method."""
+    assert testdb["tdb"].has_item("kdiff3", "contrib-2007")
+    assert not testdb["tdb"].has_item("kdiff3", "pardus-2007")
+    assert testdb["tdb"].has_item("acpica")
 
-    def testHasItem(self):
-        assert self.testdb.tdb.has_item("kdiff3", "contrib-2007")
-        assert not self.testdb.tdb.has_item("kdiff3", "pardus-2007")
-        assert self.testdb.tdb.has_item("acpica")
 
-    def testWhichRepo(self):
-        assert self.testdb.tdb.which_repo("aggdraw") == "pardus-2007"
-        assert self.testdb.tdb.which_repo("kmess") == "contrib-2007"
+@pytest.mark.database
+def test_which_repo(testdb):
+    """Test which_repo method."""
+    assert testdb["tdb"].which_repo("aggdraw") == "pardus-2007"
+    assert testdb["tdb"].which_repo("kmess") == "contrib-2007"
 
-    def testGetItemAndRepository(self):
-        pkg, repo = self.testdb.tdb.get_item_repo("acpica")
-        assert pkg == "package acpica"
-        assert repo == "pardus-2007"
 
-        pkg, repo = self.testdb.tdb.get_item_repo("kmess")
-        assert pkg == "package kmess"
-        assert repo == "contrib-2007"
+@pytest.mark.database
+def test_get_item_and_repository(testdb):
+    """Test get_item_repo method."""
+    pkg, repo = testdb["tdb"].get_item_repo("acpica")
+    assert pkg == "package acpica"
+    assert repo == "pardus-2007"
 
-    def testItemRepos(self):
-        db = pisi.db.itembyrepo.ItemByRepo({})
-        assert db.item_repos("caracal") == ["caracal"]
-        # repos were created by testcase.py
-        assert db.item_repos() == ["pardus-2007", "contrib-2007", "pardus-2007-src"]
+    pkg, repo = testdb["tdb"].get_item_repo("kmess")
+    assert pkg == "package kmess"
+    assert repo == "contrib-2007"
 
-    def testGetItem(self):
-        assert self.testdb.tdb.get_item("acpica") == "package acpica"
-        assert self.testdb.tdb.get_item("kmess") == "package kmess"
 
-    def testGetItemOfRepository(self):
-        assert self.testdb.tdb.get_item("acpica", "pardus-2007") == "package acpica"
-        assert self.testdb.tdb.get_item("kmess", "contrib-2007") == "package kmess"
+@pytest.mark.database
+def test_item_repos():
+    """Test item_repos method."""
+    db = pisi.db.itembyrepo.ItemByRepo({})
+    assert db.item_repos("caracal") == ["caracal"]
+    # repos were created by testcase.py
+    assert db.item_repos() == ["pardus-2007", "contrib-2007", "pardus-2007-src"]
 
-    def testGetItemKeys(self):
-        assert set(self.testdb.tdb.get_item_keys("pardus-2007")) == set(
-            ["aggdraw", "acpica"]
-        )
-        assert set(self.testdb.tdb.get_item_keys("contrib-2007")) == set(
-            ["kdiff3", "kmess"]
-        )
-        assert set(self.testdb.tdb.get_item_keys()) == set(
-            ["kdiff3", "kmess", "aggdraw", "acpica"]
-        )
 
-    def testGetListItem(self):
-        assert set(self.testdb.odb.get_list_item("pardus-2007")) == set(
-            ["rar", "wengophone"]
-        )
-        assert set(self.testdb.odb.get_list_item("contrib-2007")) == set(["xara"])
-        assert set(self.testdb.odb.get_list_item()) == set(
-            ["rar", "xara", "wengophone"]
-        )
+@pytest.mark.database
+def test_get_item(testdb):
+    """Test get_item method."""
+    assert testdb["tdb"].get_item("acpica") == "package acpica"
+    assert testdb["tdb"].get_item("kmess") == "package kmess"
+
+
+@pytest.mark.database
+def test_get_item_of_repository(testdb):
+    """Test get_item with repository parameter."""
+    assert testdb["tdb"].get_item("acpica", "pardus-2007") == "package acpica"
+    assert testdb["tdb"].get_item("kmess", "contrib-2007") == "package kmess"
+
+
+@pytest.mark.database
+def test_get_item_keys(testdb):
+    """Test get_item_keys method."""
+    assert set(testdb["tdb"].get_item_keys("pardus-2007")) == set(
+        ["aggdraw", "acpica"]
+    )
+    assert set(testdb["tdb"].get_item_keys("contrib-2007")) == set(
+        ["kdiff3", "kmess"]
+    )
+    assert set(testdb["tdb"].get_item_keys()) == set(
+        ["kdiff3", "kmess", "aggdraw", "acpica"]
+    )
+
+
+@pytest.mark.database
+def test_get_list_item(testdb):
+    """Test get_list_item method."""
+    assert set(testdb["odb"].get_list_item("pardus-2007")) == set(
+        ["rar", "wengophone"]
+    )
+    assert set(testdb["odb"].get_list_item("contrib-2007")) == set(["xara"])
+    assert set(testdb["odb"].get_list_item()) == set(
+        ["rar", "xara", "wengophone"]
+    )

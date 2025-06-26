@@ -23,13 +23,32 @@ import pisi.context as ctx
 @pytest.fixture(scope="session", autouse=True)
 def setup_pisi_environment():
     """Setup PiSi environment for all tests."""
+    # Create temporary directories for PiSi databases
+    temp_dir = tempfile.mkdtemp(prefix="pisi_test_")
+    
+    # Set up PiSi configuration to use temporary directories
     options = pisi.config.Options()
     options.destdir = "repos/tmp"
     pisi.api.set_options(options)
     pisi.api.set_comar(False)
 
+    # Configure PiSi to use temporary directories
     ctx.config.values.general.distribution = "Pardus"
     ctx.config.values.general.distribution_release = "2007"
+    
+    # Override database paths to use temporary directory
+    ctx.config.values.dirs.db_dir = os.path.join(temp_dir, "db")
+    ctx.config.values.dirs.cache_dir = os.path.join(temp_dir, "cache")
+    ctx.config.values.dirs.packages_dir = os.path.join(temp_dir, "packages")
+    ctx.config.values.dirs.index_dir = os.path.join(temp_dir, "index")
+    ctx.config.values.dirs.info_dir = os.path.join(temp_dir, "info")
+    
+    # Create necessary directories
+    os.makedirs(ctx.config.values.dirs.db_dir, exist_ok=True)
+    os.makedirs(ctx.config.values.dirs.cache_dir, exist_ok=True)
+    os.makedirs(ctx.config.values.dirs.packages_dir, exist_ok=True)
+    os.makedirs(ctx.config.values.dirs.index_dir, exist_ok=True)
+    os.makedirs(ctx.config.values.dirs.info_dir, exist_ok=True)
 
     # Setup test repositories if they don't exist
     if not pisi.api.list_repos():
@@ -45,6 +64,8 @@ def setup_pisi_environment():
     # Cleanup after all tests
     if os.path.exists("repos/tmp"):
         shutil.rmtree("repos/tmp")
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
 
 
 @pytest.fixture

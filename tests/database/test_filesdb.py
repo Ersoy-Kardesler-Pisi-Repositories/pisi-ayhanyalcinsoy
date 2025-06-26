@@ -10,60 +10,73 @@
 # Please read the COPYING file.
 #
 
-from . import testcase
+import pytest
 import pisi
 
 
-class FilesDBTestCase(testcase.TestCase):
+@pytest.fixture
+def filesdb():
+    """Provide a FilesDB instance for tests."""
+    return pisi.db.filesdb.FilesDB()
 
-    filesdb = pisi.db.filesdb.FilesDB()
 
-    def testHasFile(self):
-        assert not self.filesdb.has_file("usr/bin/ethtool")
-        pisi.api.install(["ethtool"])
-        assert self.filesdb.has_file("usr/bin/ethtool")
-        pisi.api.remove(["ethtool"])
-        assert not self.filesdb.has_file("usr/bin/ethtool")
+@pytest.mark.database
+def test_has_file(filesdb):
+    """Test has_file method."""
+    assert not filesdb.has_file("usr/bin/ethtool")
+    pisi.api.install(["ethtool"])
+    assert filesdb.has_file("usr/bin/ethtool")
+    pisi.api.remove(["ethtool"])
+    assert not filesdb.has_file("usr/bin/ethtool")
 
-    def testGetFile(self):
-        pisi.api.install(["ethtool"])
-        pkg, path = self.filesdb.get_file("usr/bin/ethtool")
-        assert pkg == "ethtool"
-        assert path == "usr/bin/ethtool"
-        pisi.api.remove(["ethtool"])
-        assert not self.filesdb.has_file("usr/bin/ethtool")
 
-    def testAddRemoveFiles(self):
-        fileinfo1 = pisi.files.FileInfo()
-        fileinfo1.path = "etc/pisi/pisi.conf"
-        fileinfo2 = pisi.files.FileInfo()
-        fileinfo2.path = "etc/pisi/mirrors.conf"
+@pytest.mark.database
+def test_get_file(filesdb):
+    """Test get_file method."""
+    pisi.api.install(["ethtool"])
+    pkg, path = filesdb.get_file("usr/bin/ethtool")
+    assert pkg == "ethtool"
+    assert path == "usr/bin/ethtool"
+    pisi.api.remove(["ethtool"])
+    assert not filesdb.has_file("usr/bin/ethtool")
 
-        files = pisi.files.Files()
-        files.list.append(fileinfo1)
-        files.list.append(fileinfo2)
 
-        assert not self.filesdb.has_file("etc/pisi/pisi.conf")
-        assert not self.filesdb.has_file("etc/pisi/mirrors.conf")
+@pytest.mark.database
+def test_add_remove_files(filesdb):
+    """Test add_files and remove_files methods."""
+    fileinfo1 = pisi.files.FileInfo()
+    fileinfo1.path = "etc/pisi/pisi.conf"
+    fileinfo2 = pisi.files.FileInfo()
+    fileinfo2.path = "etc/pisi/mirrors.conf"
 
-        self.filesdb.add_files("pisi", files)
+    files = pisi.files.Files()
+    files.list.append(fileinfo1)
+    files.list.append(fileinfo2)
 
-        assert self.filesdb.has_file("etc/pisi/pisi.conf")
-        assert self.filesdb.has_file("etc/pisi/mirrors.conf")
+    assert not filesdb.has_file("etc/pisi/pisi.conf")
+    assert not filesdb.has_file("etc/pisi/mirrors.conf")
 
-        pkg, path = self.filesdb.get_file("etc/pisi/pisi.conf")
-        assert pkg == "pisi"
+    filesdb.add_files("pisi", files)
 
-        # FIXME: inconsistency in filesdb.py add_remove and remove_remove parameters
-        self.filesdb.remove_files(files.list)
+    assert filesdb.has_file("etc/pisi/pisi.conf")
+    assert filesdb.has_file("etc/pisi/mirrors.conf")
 
-        assert not self.filesdb.has_file("etc/pisi/pisi.conf")
-        assert not self.filesdb.has_file("etc/pisi/mirrors.conf")
+    pkg, path = filesdb.get_file("etc/pisi/pisi.conf")
+    assert pkg == "pisi"
 
-    def testSearchFile(self):
-        assert not self.filesdb.search_file("ethtool")
-        pisi.api.install(["ethtool"])
-        found = self.filesdb.search_file("ethtool")
-        pkg, files = found[0]
-        assert set(files) == set(["usr/bin/ethtool"])
-        pisi.api.remove(["ethtool"])
+    # FIXME: inconsistency in filesdb.py add_remove and remove_remove parameters
+    filesdb.remove_files(files.list)
+
+    assert not filesdb.has_file("etc/pisi/pisi.conf")
+    assert not filesdb.has_file("etc/pisi/mirrors.conf")
+
+
+@pytest.mark.database
+def test_search_file(filesdb):
+    """Test search_file method."""
+    assert not filesdb.search_file("ethtool")
+    pisi.api.install(["ethtool"])
+    found = filesdb.search_file("ethtool")
+    pkg, files_list = found[0]
+    assert set(files_list) == set(["usr/bin/ethtool"])
+    pisi.api.remove(["ethtool"])

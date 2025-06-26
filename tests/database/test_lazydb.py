@@ -11,30 +11,44 @@
 #
 
 import pytest
-import unittest
 import pisi.db.lazydb as lazydb
 
 
-class TestDB(lazydb.LazyDB):
-
+class TestLazyDB(lazydb.LazyDB):
+    """Test implementation of LazyDB."""
+    
     def init(self):
         self.testfield = True
 
     def getTestField(self):
         return self.testfield
 
-    def testDatabaseMethodForcingInit(self):
-        db = TestDB()
-        assert db.getTestField()
-        assert db.__dict__.has_key("testfield")
-        db._delete()
 
-    def testDatabaseWithoutInit(self):
-        db = TestDB()
-        assert not db.__dict__.has_key("testfield")
-        db._delete()
+@pytest.fixture
+def test_db():
+    """Provide a TestLazyDB instance."""
+    return TestLazyDB()
 
-    def testSingletonBehaviour(self):
-        db = TestDB()
-        db2 = TestDB()
-        assert id(db) == id(db2)
+
+@pytest.mark.database
+def test_database_method_forcing_init(test_db):
+    """Test database method that forces initialization."""
+    assert test_db.getTestField()
+    assert "testfield" in test_db.__dict__
+    test_db._delete()
+
+
+@pytest.mark.database
+def test_database_without_init():
+    """Test database without initialization."""
+    db = TestLazyDB()
+    assert "testfield" not in db.__dict__
+    db._delete()
+
+
+@pytest.mark.database
+def test_singleton_behaviour():
+    """Test singleton behavior."""
+    db = TestLazyDB()
+    db2 = TestLazyDB()
+    assert id(db) == id(db2)
