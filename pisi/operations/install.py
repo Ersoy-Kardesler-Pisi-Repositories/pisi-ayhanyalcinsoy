@@ -27,6 +27,45 @@ import pisi.pgraph as pgraph
 import pisi.ui as ui
 import pisi.db
 
+def plan_install_pkg_names(A):
+    """Plan the installation of packages by name, resolving dependencies
+    and returning a graph and installation order."""
+    
+    packagedb = pisi.db.packagedb.PackageDB()
+    installdb = pisi.db.installdb.InstallDB()
+    
+    # try to construct a pisi graph of packages to install
+    G_f = pgraph.PGraph(packagedb)  # construct G_f
+    
+    # Add initial packages to the graph
+    for x in A:
+        G_f.add_package(x)
+    
+    # Build dependency closure iteratively
+    B = set(A)
+    while len(B) > 0:
+        Bp = set()
+        for x in B:
+            pkg = packagedb.get_package(x)
+            pkg_name = getattr(pkg, 'name', None)
+            if not pkg_name:
+                continue
+            # Add runtime dependencies
+            for dep in getattr(pkg, 'packageDependencies', []):
+                if not dep.satisfied_by_installed():
+                    if dep.satisfied_by_repo():
+                        if dep.package not in G_f.vertices():
+                            Bp.add(dep.package)
+                            G_f.add_package(dep.package)
+                        G_f.add_dep(pkg_name, dep)
+                    else:
+                        ctx.ui.error(_('Dependency %s of %s cannot be satisfied') % (dep, pkg_name))
+                        raise Exception(_("Installation is not possible."))
+        B = Bp
+    
+    order = G_f.topological_sort()
+    return G_f, order
+
 def install_pkg_names(A, reinstall=False, extra=False):
     """This is the real thing. It installs packages from
     the repository, trying to perform a minimum number of
