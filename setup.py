@@ -17,9 +17,9 @@ import glob
 import sys
 import inspect
 import tempfile
-from distutils.core import setup
-from distutils.command.build import build
-from distutils.command.install import install
+from setuptools import setup, find_packages
+from setuptools.command.build_py import build_py
+from setuptools.command.install import install
 
 sys.path.insert(0, '.')
 import pisi
@@ -37,20 +37,20 @@ TEST_REQUIRES = [
 ]
 
 
-class Build(build):
+class Build(build_py):
     def run(self):
-        build.run(self)
+        build_py.run(self)
 
-        self.mkpath(self.build_base)
+        self.mkpath(self.build_lib)
 
         for in_file in IN_FILES:
             name, ext = os.path.splitext(in_file)
-            self.spawn(["intltool-merge", "-x", "po", in_file, os.path.join(self.build_base, name)])
+            self.spawn(["intltool-merge", "-x", "po", in_file, os.path.join(self.build_lib, name)])
 
 
-class BuildPo(build):
+class BuildPo(build_py):
     def run(self):
-        build.run(self)
+        build_py.run(self)
         self.build_po()
 
     def build_po(self):
@@ -85,7 +85,7 @@ class BuildPo(build):
 
         # Update PO files
         for item in glob.glob1("po", "*.po"):
-            print("Updating .. ", item)  # Python 3'te print parantezle kullanılır
+            print("Updating .. ", item)
             os.system("msgmerge --update --no-wrap --sort-by-file po/%s po/%s.pot" % (item, PROJECT))
 
         # Cleanup
@@ -111,28 +111,29 @@ class Install(install):
             if not name.endswith('.po'):
                 continue
             lang = name[:-3]
-            print("Installing '%s' translations..." % lang)  # Parantez eklendi
+            print("Installing '%s' translations..." % lang)
             os.popen("msgfmt po/%s.po -o po/%s.mo" % (lang, lang))
-            if not self.root:
-                self.root = "/"
-            destpath = os.path.join(self.root, "usr/share/locale/%s/LC_MESSAGES" % lang)
+            root = self.root or "/"
+            destpath = os.path.join(root, "usr/share/locale/%s/LC_MESSAGES" % lang)
             if not os.path.exists(destpath):
                 os.makedirs(destpath)
             shutil.copy("po/%s.mo" % lang, os.path.join(destpath, "pisi.mo"))
 
     def installdoc(self):
-        destpath = os.path.join(self.root, "usr/share/doc/pisi")
+        root = self.root or "/"
+        destpath = os.path.join(root, "usr/share/doc/pisi")
         if not os.path.exists(destpath):
             os.makedirs(destpath)
         os.chdir('doc')
         for pdf in glob.glob('*.pdf'):
-            print('Installing', pdf)  # Parantez eklendi
+            print('Installing', pdf)
             shutil.copy(pdf, os.path.join(destpath, pdf))
         os.chdir('..')
 
     def generateConfigFile(self):
         import pisi.configfile
-        destpath = os.path.join(self.root, "etc/pisi/")
+        root = self.root or "/"
+        destpath = os.path.join(root, "etc/pisi/")
         if not os.path.exists(destpath):
             os.makedirs(destpath)
 
@@ -140,7 +141,7 @@ class Install(install):
         if os.path.isfile(confFile):  # Don't overwrite existing pisi.conf
             return
 
-        with open(confFile, "w") as pisiconf:  # Dosya açma işlemi with ifadesiyle yapıldı
+        with open(confFile, "w") as pisiconf:
             klasses = inspect.getmembers(pisi.configfile, inspect.isclass)
             defaults = [klass for klass in klasses if klass[0].endswith('Defaults')]
 
@@ -165,21 +166,38 @@ setup(
     version=pisi.__version__,
     description="PiSi (Packages Installed Successfully as Intended)",
     long_description="PiSi is the package management system of Pisi Linux.",
+    long_description_content_type="text/plain",
     license="GNU GPL2",
     author="Pisi Linux Developers",
     author_email="admins@pisilinux.org",
     url="https://github.com/pisilinux/project/tree/master/pisi",
-    package_dir={'': '.'},
-    packages=['pisi', 'pisi.cli', 'pisi.operations', 'pisi.actionsapi', 'pisi.pxml', 'pisi.scenarioapi', 'pisi.db'],
+    packages=find_packages(),
     scripts=['pisi-cli', 'scripts/lspisi', 'scripts/unpisi', 'scripts/check-newconfigs.py', 'scripts/revdep-rebuild'],
     cmdclass={
-        'build': Build,
+        'build_py': Build,
         'build_po': BuildPo,
         'install': Install},
     extras_require={
         'test': TEST_REQUIRES,
     },
     python_requires='>=3.6',
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Topic :: System :: Software Distribution',
+        'Topic :: System :: Systems Administration',
+    ],
 )
 
 # the below stuff is really nice but we already have a version
