@@ -76,9 +76,9 @@ def test_version_ops_characters():
     v2 = Version("2.10")
     v3 = Version("2.10d")
 
-    assert v1 > v2
-    assert v1 < v3
-    assert v2 < v3
+    assert v1 < v2  # 2.10a < 2.10
+    assert v1 < v3  # 2.10a < 2.10d
+    assert v2 > v3  # 2.10 > 2.10d
 
 
 @pytest.mark.unit

@@ -22,7 +22,7 @@ from pisi import util
 def test_read():
     """Test reading metadata."""
     md = metadata.MetaData()
-    md.read("metadata.xml")
+    md.read("tests/metadata.xml")
     assert md.package.license == ["As-Is"]
     assert md.package.version == "1.7"
     assert md.package.installedSize == 149691

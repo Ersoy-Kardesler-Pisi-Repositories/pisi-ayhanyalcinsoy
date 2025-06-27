@@ -81,10 +81,25 @@ def prefix(a, b):
             return False
     return True
 
-def remove_prefix(a, b):
-    """Remove prefix a from sequence b."""
-    assert prefix(a, b)
-    return b[len(a):]
+def remove_prefix(prefix, path):
+    """Remove the prefix from the path if exists."""
+    if isinstance(prefix, list) and isinstance(path, list):
+        # Handle list case (for path components)
+        if path[:len(prefix)] == prefix:
+            return path[len(prefix):]
+        return path
+    elif isinstance(prefix, str) and isinstance(path, str):
+        # Handle string case
+        if path.startswith(prefix):
+            return path[len(prefix):]
+        return path
+    else:
+        # Mixed types, convert to strings
+        prefix_str = '/'.join(prefix) if isinstance(prefix, list) else str(prefix)
+        path_str = '/'.join(path) if isinstance(path, list) else str(path)
+        if path_str.startswith(prefix_str):
+            return path_str[len(prefix_str):]
+        return path_str
 
 def suffix(a, b):
     """Check if sequence a is a suffix of sequence b."""
@@ -560,12 +575,6 @@ def get_free_space(path):
 def get_size_in_mb(size):
     """Convert bytes to megabytes."""
     return size / (1024 * 1024)
-
-def remove_prefix(prefix, path):
-    """Remove the prefix from the path if exists."""
-    if path.startswith(prefix):
-        return path[len(prefix):]
-    return path
 
 def join_path(base, *paths):
     """Join paths together and normalize the result."""

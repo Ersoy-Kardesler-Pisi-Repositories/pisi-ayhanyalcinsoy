@@ -137,7 +137,7 @@ def upgrade(A=None, repo=None):
     A = set(Ap)
 
     A |= set(pisi.util.flatten_list(replaces.values()))
-    A |= upgrade_base(A)
+    A |= set(upgrade_base(A))
 
     A = pisi.blacklist.exclude_from(A, ctx.const.blacklist)
 

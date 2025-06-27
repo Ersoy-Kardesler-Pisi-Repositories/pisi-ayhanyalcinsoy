@@ -91,6 +91,10 @@ class History(xmlfile.XmlFile):
 
     t_Operation = [Operation, autoxml.mandatory]
 
+    def __init__(self):
+        super(History, self).__init__(self.tag)
+        self.operation = Operation()
+
     def create(self, operation):
 
         if operation not in ["upgrade", "remove", "emerge", "install", "snapshot", "takeback", "repoupdate"]:
@@ -148,3 +152,6 @@ class History(xmlfile.XmlFile):
         files.sort(key=lambda x: int(x.split("_")[0]))  # Python 3'te cmp kaldırıldı, key ile sıralandı
         no, opxml = files[-1].split("_")
         return "%03d" % (int(no) + 1)
+
+    def read(self, filename):
+        return self.readxml(filename)

@@ -52,7 +52,7 @@ def install_pkg_names(A, reinstall=False, extra=False):
         ctx.ui.info(_('No packages to install.'))
         return True
 
-    A |= operations.upgrade.upgrade_base(A)
+    A |= set(operations.upgrade.upgrade_base(A))
 
     if not ctx.config.get_option('ignore_dependency'):
         G_f, order = plan_install_pkg_names(A)

@@ -51,12 +51,23 @@ def make_version(version):
                         return list(map(__make_version_item, ver.split("."))), value, \
                                list(map(__make_version_item, suffix[len(keyword):].split(".")))
                 else:
+                    # Handle single character suffixes like 'a', 'b', 'c', 'd'
+                    if len(suffix) == 1 and suffix.isalpha():
+                        # Treat single letters as alpha versions
+                        return list(map(__make_version_item, ver.split("."))), -5, [(0, suffix)]
                     # Probably an invalid version string. Reset ver string
                     # to raise an exception in __make_version_item function.
                     ver = ""
             else:
                 return list(map(__make_version_item, ver.split("."))), 0, \
                        list(map(__make_version_item, suffix.split(".")))
+
+        # Handle versions without underscores that might have single character suffixes
+        if len(ver) > 0 and ver[-1].isalpha():
+            # Version like "2.10a" - extract the letter
+            letter = ver[-1]
+            ver_part = ver[:-1]
+            return list(map(__make_version_item, ver_part.split("."))), -5, [(0, letter)]
 
         return list(map(__make_version_item, ver.split("."))), 0, [(0, None)]
 

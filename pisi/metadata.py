@@ -51,6 +51,7 @@ class Package(specfile.Package, xmlfile.XmlFile, metaclass=autoxml.autoxml):
     t_PackageURI = [autoxml.String, autoxml.optional]
     t_DeltaPackages = [[Delta], autoxml.optional, "Delta"]
     t_PackageFormat = [autoxml.String, autoxml.optional]
+    t_History = [[specfile.Update], autoxml.mandatory, "History/Update"]
 
     t_Source = [Source, autoxml.optional]
 
@@ -81,17 +82,18 @@ class Package(specfile.Package, xmlfile.XmlFile, metaclass=autoxml.autoxml):
 
         return s
 
-class MetaData(xmlfile.XmlFile):
+class MetaData(xmlfile.XmlFile, metaclass=autoxml.autoxml):
     """Package metadata. Metadata is composed of Specfile and various
     other information. A metadata has two parts, Source and Package."""
-
-    __metaclass__ = autoxml.autoxml
 
     tag = "PISI"
 
     t_Source = [Source, autoxml.mandatory]
     t_Package = [Package, autoxml.mandatory]
     # t_History = [[Update], autoxml.mandatory]
+
+    def __init__(self):
+        super().__init__(self.tag)
 
     def from_spec(self, src, pkg, history):
         # this just copies fields, it doesn't fix every necessary field
@@ -125,3 +127,6 @@ class MetaData(xmlfile.XmlFile):
         self.source.release = src.release
         self.package.version = src.version
         self.package.release = src.release
+
+    def read(self, filename):
+        return self.readxml(filename)

@@ -39,9 +39,7 @@ import pisi.db
 class Error(pisi.Error):
     pass
 
-__metaclass__ = autoxml.autoxml
-
-class Packager:
+class Packager(metaclass=autoxml.autoxml):
 
     t_Name = [autoxml.Text, autoxml.mandatory]
     t_Email = [autoxml.String, autoxml.mandatory]
@@ -270,8 +268,11 @@ class Specfile(xmlfile.XmlFile):
     t_Packages = [[Package], autoxml.optional, "Package"]
     t_Updates = [[Update], autoxml.optional, "Update"]
 
-    def __init__(self, **kwargs):
-        self.__super.__init__(**kwargs)
+    def __init__(self, filename=None, **kwargs):
+        super(Specfile, self).__init__("PISI")
+        if filename is not None:
+            self.readxml(filename)
+        # handle kwargs if needed
 
     def find_package(self, package):
         for pkg in self.packages:
@@ -306,6 +307,9 @@ class Specfile(xmlfile.XmlFile):
         if self.has_sources():
             return self.sources[0]
         return None
+
+    def read(self, filename):
+        return self.readxml(filename)
 
 __all__ = ['SpecFile', 'Package', 'Source', 'Archive', 'Patch', 'Update', 'Packager', 'AdditionalFile', 'Path', 'ComarProvide', 'AnyDependency', 'Type', 'Action']
 

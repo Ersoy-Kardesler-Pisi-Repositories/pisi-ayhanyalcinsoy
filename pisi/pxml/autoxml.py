@@ -550,10 +550,10 @@ class autoxml(type):
             obj.__init__(tag=tag, req=req)
             return obj
 
-        def init():
+        def init(self):
             return make_object()
 
-        def decode(node, errs, where):
+        def decode(self, node, errs, where):
             node_ = xmlext.getNode(node, tag)
             if node_:
                 try:
@@ -611,10 +611,10 @@ class autoxml(type):
         x = cls.gen_tag(comp_tag, [tag_type[0], 'mandatory'])
         (init_item, decode_item, encode_item, errors_item, format_item) = x[1:]
 
-        def init():
+        def init(self):
             return []
 
-        def decode(node, errs, where):
+        def decode(self, node, errs, where):
             l = []
             nodes = xmlext.getAllNodes(node, path)
             if len(nodes) == 0 and req == 'mandatory':
